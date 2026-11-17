@@ -54,12 +54,12 @@ async function refreshMe(){const p=await SB.from('profiles').select('*').eq('use
 /* ---------------- auth ---------------- */
 function authView(mode){
   const L=S.link,pre=L&&L.pre&&!L.pre.error?L.pre:null;
-  if(L&&!mode)mode=pre&&!pre.claimed?'act':'in';mode=mode||'in';const act=mode==='act';$('#chrome').innerHTML='';
+  if(L&&!mode)mode=(pre&&pre.claimed)?'in':'act';mode=mode||'in';const act=mode==='act';$('#chrome').innerHTML='';
   const hello=act&&pre?`<div class="card pop glow" style="margin-bottom:14px;text-align:left;background:linear-gradient(135deg,rgba(76,183,165,.25),rgba(139,92,246,.25))"><div class="mut sm">Welcome to Excel Student</div><h2 style="font-size:26px;margin:2px 0">Hi ${E(pre.name)} 👋</h2><div class="row wrap" style="margin-top:6px"><span class="chip g">${ICON.check} Verified student</span>${pre.class?`<span class="chip v">${E(pre.class)}</span>`:''}</div></div>`:'';
-  const linkBad=L&&!pre&&act?'':'';
-  $('#app').innerHTML=`<div class="view stag" style="padding-top:5vh;text-align:center"><img class="logoimg" src="logo_white.png" alt="Excel Language Center" style="width:min(250px,64vw);margin:0 auto 6px"><p class="mut" style="margin:10px 0 18px">Your English world. Learn, play, check in.</p>${hello}
+  const note=L&&L.pre&&L.pre.error?'This link or code is not valid. Type your ID and code below, or ask your teacher for a new card.':(L&&pre&&pre.claimed&&!act?'Hi '+pre.name.split(' ')[0]+'! This account is already activated. Sign in below.':'');const noteH=note?`<div class="card" style="margin-bottom:12px;text-align:left;border-color:rgba(251,191,36,.5)"><span class="sm">${E(note)}</span></div>`:'';
+  $('#app').innerHTML=`<div class="view stag" style="padding-top:5vh;text-align:center"><img class="logoimg" src="logo_white.png" alt="Excel Language Center" style="width:min(250px,64vw);margin:0 auto 6px"><p class="mut" style="margin:10px 0 18px">Your English world. Learn, play, check in.</p>${hello}${noteH}
   <div class="row" style="background:var(--card);border:1px solid var(--line);border-radius:18px;padding:5px;margin-bottom:12px"><button class="btn sm ${act?'':'ghost'} grow" id="m_act" style="${act?'':'background:none;border:0'}">First time</button><button class="btn sm ${act?'ghost':''} grow" id="m_in" style="${act?'background:none;border:0':''}">Sign in</button></div>
-  <div class="card" style="text-align:left">${act&&pre?`<div class="row"><span class="lbl" style="margin:0">Your Student ID</span><b class="grow" style="text-align:right;font-family:var(--disp)">${E(L.id)}</b></div>`:`<span class="lbl" style="margin-top:0">Student ID</span><input id="a_id" class="inp" placeholder="e.g. EX017" value="${E(act?(L?L.id:''):LS.get('lastid',''))}" autocapitalize="characters" autocomplete="username">`}
+  <div class="card" style="text-align:left">${act&&pre?`<div class="row"><span class="lbl" style="margin:0">Your Student ID</span><b class="grow" style="text-align:right;font-family:var(--disp)">${E(L.id)}</b></div>`:`<span class="lbl" style="margin-top:0">Student ID</span><input id="a_id" class="inp" placeholder="e.g. EX017" value="${E(act?(L?L.id:''):LS.get('lastid2',''))}" autocapitalize="characters" autocomplete="username">`}
   ${act&&!pre?`<span class="lbl">Activation code</span><input id="a_code" class="inp" inputmode="numeric" placeholder="6 digits from your teacher" value="${E(L?L.code:'')}">`:''}
   <span class="lbl">${act?'Make a password':'Password'}</span><input id="a_pw" type="password" class="inp" placeholder="${act?'At least 6 characters':'Your password'}" autocomplete="${act?'new-password':'current-password'}">
   <button id="a_go" class="btn full" style="margin-top:18px">${act?'Create my account':'Sign in'}</button>
@@ -94,7 +94,7 @@ async function doAuth(act,pre){
       const cl=await SB.rpc('claim_student',{p_id:id,p_code:code});if(cl.error)throw cl.error;if(cl.data&&cl.data.error)throw new Error(cl.data.error);
       S.fresh=true;
     }else{const si2=await SB.auth.signInWithPassword({email,password:pw});if(si2.error)throw new Error('Wrong ID or password')}
-    LS.set('lastid',id);await loadMe();if(!S.me)throw new Error('Account not activated yet');
+    LS.set('lastid2',id);await loadMe();if(!S.me)throw new Error('Account not activated yet');
     history.replaceState(null,'',location.pathname);S.link=null;confetti(60);S.tab='home';
     if(S.fresh){S.fresh=false;onboard()}else{render();toast('Welcome back, '+(S.me.nickname||(S.me.name||'').split(' ')[0])+'!')}
   }catch(e){b.disabled=false;b.textContent=act?'Create my account':'Sign in';toast(e.message||'Something went wrong');b.classList.add('shake');setTimeout(()=>b.classList.remove('shake'),500)}
