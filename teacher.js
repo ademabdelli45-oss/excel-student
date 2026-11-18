@@ -11,7 +11,7 @@ const T={
   async refresh(){try{const w=await rpc('t_whoami');if(w)S.t=w}catch(e){}},
 
   render(){
-    T.stop();document.documentElement.dataset.bg='aurora';document.documentElement.style.setProperty('--acc','#8b5cf6');$('.bgfx .fx').innerHTML='';
+    T.stop();if(window.Theme)Theme.apply({bg:'aurora'});document.documentElement.dataset.bg='aurora';document.documentElement.style.setProperty('--acc','#8b5cf6');$('.bgfx .fx').innerHTML='';
     const tabs=[['home','Home',ICON.home],['classes','Classes',ICON.class],['tools','Tools',ICON.chat],['me','Me',ICON.me]];
     const tb=t=>`<button data-t="${t[0]}" class="${T.tab===t[0]?'on':''}">${t[2]}<span>${t[1]}</span></button>`;
     $('#chrome').innerHTML=`<div class="nav">${tb(tabs[0])}${tb(tabs[1])}<button class="sc" id="fab" aria-label="Class QR"><i>${ICON.scan}</i><span>QR</span></button>${tb(tabs[2])}${tb(tabs[3])}</div>`;
