@@ -89,7 +89,7 @@ async function doAuth(){
       const su=await SB.auth.signUp({email,password:pw});if(su.error)throw su.error;
       if(!su.data.session){const s2=await SB.auth.signInWithPassword({email,password:pw});if(s2.error)throw s2.error}
       let cl=await SB.rpc('claim_student',{p_id:id,p_code:pw});
-      if(cl.error&&/find that student/i.test(cl.error.message))cl=await SB.rpc('claim_teacher',{p_id:id,p_code:pw});
+      const nf=x=>/find that student/i.test((x.error&&x.error.message)||(x.data&&x.data.error)||'');if(nf(cl))cl=await SB.rpc('claim_teacher',{p_id:id,p_code:pw});
       if(cl.error)throw cl.error;if(cl.data&&cl.data.error)throw new Error(cl.data.error);fresh=true;
     }
     LS.set('lastid2',id);await loadWho();if(!S.me&&!S.t)throw new Error('This account is not ready yet. Ask your teacher.');
