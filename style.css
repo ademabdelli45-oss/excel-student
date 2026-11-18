@@ -101,3 +101,8 @@ input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 html.still *{animation-play-state:paused!important}
 .btn svg:not(.ico){width:1.25em;height:1.25em;vertical-align:-.25em;margin-right:4px}
+
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}.seg button{padding:10px 2px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--tx2);font-weight:800;font-size:12px}.seg button.on{color:#fff;border-color:transparent}.seg button.on.g{background:#16a34a}.seg button.on.a{background:#d97706}.seg button.on.r{background:#dc2626}.seg button.on.v{background:#7c3aed}
+.chip.v{background:rgba(139,92,246,.2);color:#a78bfa}.btn.red{color:#f87171;border-color:rgba(248,113,113,.4)}.qrw{background:#fff;padding:14px;border-radius:18px;display:inline-block}
+.pcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+@media print{.noprint,.nav,.bgfx{display:none!important}body{background:#fff!important;color:#000!important}.pcard{break-inside:avoid;border:1px solid #999!important;background:#fff!important;color:#000!important}.pcards{grid-template-columns:repeat(3,1fr)}}

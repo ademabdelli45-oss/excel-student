@@ -37,11 +37,12 @@ async function boot(){
   const m=(location.search.match(/[?&]c=([^&]+)/)||[])[1];
   if(m){const p=decodeURIComponent(m).split('.');S.link={id:(p[0]||'').toUpperCase(),code:p[1]||''}}
   const s=await SB.auth.getSession();
-  if(s.data.session){try{await loadMe()}catch(e){S.me=null}if(!S.me){try{await SB.auth.signOut()}catch(e){}}}
-  if(S.link&&!S.me){try{S.link.pre=await rpc('claim_preview',{p_id:S.link.id,p_code:S.link.code})}catch(e){S.link.pre={error:'x'}}}
+  if(s.data.session){try{await loadWho()}catch(e){S.me=null;S.t=null}if(!S.me&&!S.t){try{await SB.auth.signOut()}catch(e){}}}
+  if(S.link&&!S.me&&!S.t){try{S.link.pre=await rpc('claim_preview',{p_id:S.link.id,p_code:S.link.code})}catch(e){S.link.pre={error:'x'}}}
   setTimeout(()=>{render();loadingDone()},Math.max(0,1700-(Date.now()-t0)));
   if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
+async function loadWho(){const w=await rpc('t_whoami');if(w){S.t=w;S.me=null;return}S.t=null;await loadMe()}
 async function loadMe(){
   const u=await SB.auth.getUser();const uid=u.data.user.id;
   const p=await SB.from('profiles').select('*').eq('user_id',uid).maybeSingle();
@@ -52,22 +53,17 @@ async function loadMe(){
 async function refreshMe(){const p=await SB.from('profiles').select('*').eq('user_id',S.me.user_id).maybeSingle();if(p.data){S.me=p.data;applyTheme()}}
 
 /* ---------------- auth ---------------- */
-function authView(mode){
-  const L=S.link,pre=L&&L.pre&&!L.pre.error?L.pre:null;
-  if(L&&!mode)mode=(pre&&pre.claimed)?'in':'act';mode=mode||'in';const act=mode==='act';$('#chrome').innerHTML='';
-  const hello=act&&pre?`<div class="card pop glow" style="margin-bottom:14px;text-align:left;background:linear-gradient(135deg,rgba(76,183,165,.25),rgba(139,92,246,.25))"><div class="mut sm">Welcome to Excel Student</div><h2 style="font-size:26px;margin:2px 0">Hi ${E(pre.name)} 👋</h2><div class="row wrap" style="margin-top:6px"><span class="chip g">${ICON.check} Verified student</span>${pre.class?`<span class="chip v">${E(pre.class)}</span>`:''}</div></div>`:'';
-  const note=L&&L.pre&&L.pre.error?'This link or code is not valid. Type your ID and code below, or ask your teacher for a new card.':(L&&pre&&pre.claimed&&!act?'Hi '+pre.name.split(' ')[0]+'! This account is already activated. Sign in below.':'');const noteH=note?`<div class="card" style="margin-bottom:12px;text-align:left;border-color:rgba(251,191,36,.5)"><span class="sm">${E(note)}</span></div>`:'';
+function authView(){
+  const L=S.link,pre=L&&L.pre&&!L.pre.error?L.pre:null;$('#chrome').innerHTML='';
+  const hello=pre?`<div class="card pop glow" style="margin-bottom:14px;text-align:left;background:linear-gradient(135deg,rgba(76,183,165,.25),rgba(139,92,246,.25))"><div class="mut sm">Welcome to Excel</div><h2 style="font-size:26px;margin:2px 0">Hi ${E((pre.name||'').split(' ')[0])} 👋</h2><div class="row wrap" style="margin-top:6px"><span class="chip g">${ICON.check} Verified</span>${pre.class?`<span class="chip v">${E(pre.class)}</span>`:''}</div></div>`:'';
+  const note=L&&L.pre&&L.pre.error?'This link or PIN is not valid any more. Type your ID and PIN below, or ask your teacher for a new card.':'';const noteH=note?`<div class="card" style="margin-bottom:12px;text-align:left;border-color:rgba(251,191,36,.5)"><span class="sm">${E(note)}</span></div>`:'';
   $('#app').innerHTML=`<div class="view stag" style="padding-top:5vh;text-align:center"><img class="logoimg" src="logo_white.png" alt="Excel Language Center" style="width:min(250px,64vw);margin:0 auto 6px"><p class="mut" style="margin:10px 0 18px">Your English world. Learn, play, check in.</p>${hello}${noteH}
-  <div class="row" style="background:var(--card);border:1px solid var(--line);border-radius:18px;padding:5px;margin-bottom:12px"><button class="btn sm ${act?'':'ghost'} grow" id="m_act" style="${act?'':'background:none;border:0'}">First time</button><button class="btn sm ${act?'ghost':''} grow" id="m_in" style="${act?'background:none;border:0':''}">Sign in</button></div>
-  <div class="card" style="text-align:left">${act&&pre?`<div class="row"><span class="lbl" style="margin:0">Your Student ID</span><b class="grow" style="text-align:right;font-family:var(--disp)">${E(L.id)}</b></div>`:`<span class="lbl" style="margin-top:0">Student ID</span><input id="a_id" class="inp" placeholder="e.g. EX017" value="${E(act?(L?L.id:''):LS.get('lastid2',''))}" autocapitalize="characters" autocomplete="username">`}
-  ${act&&!pre?`<span class="lbl">Activation code</span><input id="a_code" class="inp" inputmode="numeric" placeholder="6 digits from your teacher" value="${E(L?L.code:'')}">`:''}
-  <span class="lbl">${act?'Make a password':'Password'}</span><input id="a_pw" type="password" class="inp" placeholder="${act?'At least 6 characters':'Your password'}" autocomplete="${act?'new-password':'current-password'}">
-  <button id="a_go" class="btn full" style="margin-top:18px">${act?'Create my account':'Sign in'}</button>
-  </div>
-  ${act&&!pre?`<div class="card" style="text-align:left;margin-top:12px"><b>Where do I get my ID and code?</b><p class="mut sm" style="margin:6px 0 10px">Your teacher or the front desk gives you a card with a QR code, your ID and a 6-digit code, or sends you a personal link on WhatsApp. Name and class come from the school record, so you don’t type them.</p><button class="btn ghost full" id="a_scan">${ICON.scan.replace('stroke="#fff"','stroke="currentColor"')} Scan my activation card</button></div>`:''}
-  ${!act?'<p class="mut sm" style="margin:12px 0 0">New here? Tap <b>First time</b> and activate with the card or link from your teacher. Forgot your password? Ask your teacher to reset it.</p>':''}<p class="mut sm" style="margin-top:18px">Excel Language Center · Ampang Park &amp; One South</p></div>`;
-  $('#m_act').onclick=()=>authView('act');$('#m_in').onclick=()=>authView('in');if($('#a_scan'))$('#a_scan').onclick=scanCard;
-  $('#a_go').onclick=()=>doAuth(act,pre);$('#a_pw').onkeydown=e=>{if(e.key==='Enter')doAuth(act,pre)};
+  <div class="card" style="text-align:left"><h2 style="margin:0 0 4px">Sign in</h2><span class="lbl" style="margin-top:8px">Your ID</span><input id="a_id" class="inp" placeholder="e.g. EX017 or T05" value="${E(pre?L.id:(L?L.id:LS.get('lastid2','')))}" autocapitalize="characters" autocomplete="username">
+  <span class="lbl">PIN or password</span><input id="a_pw" type="password" class="inp" placeholder="6-digit PIN from your teacher" value="${pre?E(L.code):''}" autocomplete="current-password">
+  <button id="a_go" class="btn full" style="margin-top:18px">Sign in</button></div>
+  <div class="card" style="text-align:left;margin-top:12px"><b>First time here?</b><p class="mut sm" style="margin:6px 0 10px">Your teacher or the front desk gives you an <b>ID</b> and a <b>6-digit PIN</b> — on a card with a QR code, or in a WhatsApp link. Type them above and tap Sign in, or scan your card. You can change your password later in <b>Me</b>.</p><button class="btn ghost full" id="a_scan">${ICON.scan.replace('stroke="#fff"','stroke="currentColor"')} Scan my card</button></div>
+  <p class="mut sm" style="margin:14px 0 0">Forgot your PIN or password? Ask your teacher to reset it.</p><p class="mut sm" style="margin-top:14px">Excel Language Center · Ampang Park &amp; One South</p></div>`;
+  $('#a_scan').onclick=scanCard;$('#a_go').onclick=doAuth;$('#a_pw').onkeydown=e=>{if(e.key==='Enter')doAuth()};$('#a_id').onkeydown=e=>{if(e.key==='Enter')$('#a_pw').focus()};
 }
 
 async function scanCard(){
@@ -75,29 +71,32 @@ async function scanCard(){
   const vid=$('#cam');let stream,live=true,busy=false;const stop=()=>{live=false;try{stream&&stream.getTracks().forEach(t=>t.stop())}catch(e){}};
   async function got(txt){const m=String(txt||'').match(/[?&]c=([A-Za-z0-9._%-]+)/)||String(txt||'').match(/^([A-Za-z0-9-]+\.[0-9]{4,8})$/);if(!m||busy)return false;busy=true;const p=decodeURIComponent(m[1]).split('.');S.link={id:(p[0]||'').toUpperCase(),code:p[1]||''};
     try{S.link.pre=await rpc('claim_preview',{p_id:S.link.id,p_code:S.link.code})}catch(e){S.link.pre={error:'x'}}
-    stop();if(S.link.pre&&!S.link.pre.error){buzz(25);authView('act')}else{S.link=null;toast('That card is not valid. Ask your teacher.');authView('act')}return true}
-  $('#bk').onclick=()=>{stop();authView('act')};$('#mb').onclick=async()=>{if(!(await got($('#mt').value.trim())))toast('That does not look like an activation link')};
+    stop();if(S.link.pre&&!S.link.pre.error){buzz(25);authView()}else{S.link=null;toast('That card is not valid. Ask your teacher.');authView()}return true}
+  $('#bk').onclick=()=>{stop();authView()};$('#mb').onclick=async()=>{if(!(await got($('#mt').value.trim())))toast('That does not look like an activation link')};
   try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});vid.srcObject=stream;await vid.play();const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
     (function tick(){if(!live)return;if(vid.readyState>=2&&vid.videoWidth){const w=480,h=Math.round(480*vid.videoHeight/vid.videoWidth);cv.width=w;cv.height=h;cx.drawImage(vid,0,0,w,h);const q=jsQR(cx.getImageData(0,0,w,h).data,w,h);if(q&&q.data)got(q.data)}setTimeout(tick,160)})();
   }catch(e){toast('Camera blocked — paste your link instead')}
 }
-async function doAuth(act,pre){
-  const L=S.link,idEl=$('#a_id'),id=(act&&pre?L.id:(idEl?idEl.value:'')).trim().toUpperCase(),pw=$('#a_pw').value,b=$('#a_go');
-  if(!id||!pw){toast('Fill in all the boxes');return}
-  b.disabled=true;b.textContent='One moment…';const email=id.toLowerCase().replace(/[^a-z0-9]/g,'')+'@excel-student.app';
+async function doAuth(){
+  const id=($('#a_id').value||'').trim().toUpperCase(),pw=$('#a_pw').value,b=$('#a_go');
+  if(!id||!pw){toast('Type your ID and PIN');return}
+  b.disabled=true;b.textContent='One moment…';const email=id.toLowerCase().replace(/[^a-z0-9]/g,'')+'@excel-student.app';let fresh=false;
   try{
-    if(act){
-      const code=(act&&pre?L.code:$('#a_code').value).trim();if(pw.length<6)throw new Error('Password needs at least 6 characters');
-      const ok=await rpc('can_claim',{p_id:id,p_code:code});if(ok!==true&&!(ok&&ok.ok))throw new Error('That ID or code is not right. Ask your teacher.');
+    let si=await SB.auth.signInWithPassword({email,password:pw});
+    if(si.error){
+      const ok=await rpc('can_claim',{p_id:id,p_code:pw});
+      if(ok!==true)throw new Error('Wrong ID or PIN. Check your card, or ask your teacher.');
       const su=await SB.auth.signUp({email,password:pw});if(su.error)throw su.error;
-      if(!su.data.session){const si=await SB.auth.signInWithPassword({email,password:pw});if(si.error)throw si.error}
-      const cl=await SB.rpc('claim_student',{p_id:id,p_code:code});if(cl.error)throw cl.error;if(cl.data&&cl.data.error)throw new Error(cl.data.error);
-      S.fresh=true;
-    }else{const si2=await SB.auth.signInWithPassword({email,password:pw});if(si2.error)throw new Error('Wrong ID or password')}
-    LS.set('lastid2',id);await loadMe();if(!S.me)throw new Error('Account not activated yet');
+      if(!su.data.session){const s2=await SB.auth.signInWithPassword({email,password:pw});if(s2.error)throw s2.error}
+      let cl=await SB.rpc('claim_student',{p_id:id,p_code:pw});
+      if(cl.error&&/find that student/i.test(cl.error.message))cl=await SB.rpc('claim_teacher',{p_id:id,p_code:pw});
+      if(cl.error)throw cl.error;if(cl.data&&cl.data.error)throw new Error(cl.data.error);fresh=true;
+    }
+    LS.set('lastid2',id);await loadWho();if(!S.me&&!S.t)throw new Error('This account is not ready yet. Ask your teacher.');
     history.replaceState(null,'',location.pathname);S.link=null;confetti(60);S.tab='home';
-    if(S.fresh){S.fresh=false;onboard()}else{render();toast('Welcome back, '+(S.me.nickname||(S.me.name||'').split(' ')[0])+'!')}
-  }catch(e){b.disabled=false;b.textContent=act?'Create my account':'Sign in';toast(e.message||'Something went wrong');b.classList.add('shake');setTimeout(()=>b.classList.remove('shake'),500)}
+    if(S.t){T.tab='home';render();toast('Welcome, '+S.t.name.split(' ')[0]+'!')}
+    else if(fresh){onboard()}else{render();toast('Welcome back, '+(S.me.nickname||(S.me.name||'').split(' ')[0])+'!')}
+  }catch(e){b.disabled=false;b.textContent='Sign in';toast(e.message||'Something went wrong');b.classList.add('shake');setTimeout(()=>b.classList.remove('shake'),500)}
 }
 function onboard(){
   $('#chrome').innerHTML='';const draft={avatar:'🦊',nickname:'',interests:[],bg:'aurora'};
@@ -114,6 +113,7 @@ function onboard(){
 
 /* ---------------- shell ---------------- */
 function render(){
+  if(S.t){T.render();return}
   if(!S.me){authView();return}
   const tabs=[['home','Home'],['class','Class'],['play','Play'],['chat','Chat'],['me','Me']];
   const tb=t=>`<button data-t="${t[0]}" class="${S.tab===t[0]?'on':''}">${ICON[t[0]]}<span>${t[1]}</span>${t[0]==='chat'&&S.unread?`<span class="badge">${S.unread}</span>`:''}</button>`;
@@ -179,7 +179,7 @@ async function absView(){
 
 /* ---------------- class ---------------- */
 async function classView(){
-  const sub=S.sub||'hw';S.sub=null;const tabs=[['hw','📚 Homework'],['tt','🗓️ Timetable'],['at','✅ Attendance'],['rp','📝 Reports']];const c=S.cls||{};
+  const sub=S.sub||'hw';S.sub=null;const tabs=[['hw','📚 Homework'],['tt','🗓️ Timetable'],['at','✅ Attendance'],['tr','🎯 Trackers'],['rp','📝 Exams & report'],['hi','🕘 History']];const c=S.cls||{};
   wrap(`<div class="card glow" style="background:linear-gradient(135deg,${c.color||'#8b5cf6'}55,rgba(76,183,165,.2));margin-bottom:12px"><div class="mut sm">My class</div><h2 style="font-size:22px">${E(c.name||'No class yet')}</h2><div class="mut sm">${c.teacher?'Teacher '+E(c.teacher)+' · ':''}${E(c.branch||'')}</div></div><div class="row" id="ct" style="overflow:auto;padding-bottom:6px">${tabs.map(t=>`<button class="btn sm ${t[0]===sub?'':'ghost'}" data-s="${t[0]}" style="white-space:nowrap">${t[1]}</button>`).join('')}</div><div id="cb" style="margin-top:12px">${skel(3)}</div>`);
   $$('#ct button').forEach(b=>b.onclick=()=>{S.sub=b.dataset.s;classView()});const el=$('#cb');
   if(sub==='hw'){const hw=await SB.from('homework').select('*').order('due'),dn=await SB.from('homework_done').select('hw_id'),ds=(dn.data||[]).map(d=>d.hw_id);
@@ -189,10 +189,12 @@ async function classView(){
     const ev=await SB.from('events').select('*').order('on_date'),evd=(ev.data||[]).map(e=>e.on_date);let g='<div class="cal">'+DN.map(d=>`<div class="h">${d[0]}</div>`).join('');for(let i=0;i<first;i++)g+='<div></div>';
     for(let d=1;d<=n;d++){const ds2=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'),dw=new Date(y,mo,d).getDay();g+=`<div class="d ${d===cur.getDate()?'t ':''}${evd.includes(ds2)?'e':''}" style="${days.includes(dw)&&d!==cur.getDate()?'background:rgba(76,183,165,.24)':''}">${d}</div>`}g+='</div>';
     el.innerHTML=`<div class="card"><b style="font-family:var(--disp)">${E(c.name||'')}</b><div class="mut sm">${(c.days||[]).map(x=>DN[x%7]).join(' · ')||'Days not set yet'} ${c.start_time?' · '+c.start_time.slice(0,5)+'–'+(c.end_time||'').slice(0,5):''}${c.room?' · '+E(c.room):''}</div></div><div class="card" style="margin-top:12px"><h3 style="margin-bottom:10px">${MONTHS[mo]} ${y}</h3>${g}<div class="mut sm" style="margin-top:10px">Green = class day · yellow line = event</div></div><div class="card" style="margin-top:12px"><h3 style="margin-bottom:8px">Coming up</h3>${(ev.data||[]).filter(e=>e.on_date>=today()).map(e=>`<div class="row" style="margin:6px 0"><span class="chip a">${E(e.on_date.slice(5))}</span><b>${E(e.title)}</b></div>`).join('')||'<span class="mut">Nothing yet</span>'}</div>`}
-  if(sub==='at'){const at=await SB.from('attendance').select('*').order('scanned_at',{ascending:false}),a=at.data||[],p=a.filter(x=>x.status==='present').length,l=a.filter(x=>x.status==='late').length,ab=a.filter(x=>x.status==='absent').length,tot=a.length||1,pct=(p+l)/tot,ex=(S.roster&&S.roster.extra)||{};
-    el.innerHTML=`<div class="card row">${ring(pct,86,9,`<b style="font-size:20px">${Math.round(pct*100)}%</b>`)}<div class="grow"><b style="font-family:var(--disp);font-size:18px">Attendance rate</b><div class="mut sm">${a.length} app check-ins${ex.att!=null&&ex.att!==''?` · school record ${Math.round(ex.att)}%`:''}</div></div></div><div class="stats" style="margin:12px 0"><div class="stat"><b style="color:var(--green)">${p}</b><span>On time</span></div><div class="stat"><b style="color:var(--amber)">${l}</b><span>Late</span></div><div class="stat"><b style="color:var(--red)">${ab}</b><span>Absent</span></div></div>`+a.map(x=>`<div class="card row" style="margin:6px 0;padding:12px"><div class="grow">${new Date(x.scanned_at).toLocaleString('en-GB',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div><span class="chip ${x.status==='present'?'g':x.status==='late'?'a':'r'}">${E(x.status)}</span></div>`).join('');animate()}
-  if(sub==='rp'){const rp=await SB.from('reports').select('*').order('created_at',{ascending:false});
-    el.innerHTML=(rp.data||[]).map(r=>`<div class="card row" style="margin:8px 0"><div class="grow"><b>${E(r.title)}</b><div class="mut sm">${E(r.score||'')}</div></div><span class="chip g" style="font-size:18px">${E(r.grade||'')}</span></div>`).join('')||'<div class="card">Your academic reports and exam results will appear here once your teacher publishes them.</div>'}
+  if(['at','tr','rp','hi'].includes(sub)){let d;try{d=await Prog.load(true)}catch(e){el.innerHTML='<div class="card">'+E(e.message)+'</div>';return}
+    if(sub==='at')el.innerHTML=Prog.attH(d);
+    if(sub==='tr')el.innerHTML=Prog.trkH(d);
+    if(sub==='hi')el.innerHTML=Prog.hiH(d);
+    if(sub==='rp'){const rp=await SB.from('reports').select('*').order('created_at',{ascending:false});el.innerHTML=Prog.rpH(d)+(rp.data||[]).map(r=>`<div class="card row" style="margin:8px 0"><div class="grow"><b>${E(r.title)}</b><div class="mut sm">${E(r.score||'')}</div></div><span class="chip g" style="font-size:18px">${E(r.grade||'')}</span></div>`).join('')}
+    animate()}
 }
 function playView(){if(typeof Games!=="undefined")Games.show();else wrap('<div class="card">Games are loading…</div>')}
 
