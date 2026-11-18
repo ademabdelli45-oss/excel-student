@@ -10,11 +10,14 @@ const Theme={
     bold:{n:'Poster Bold',d:"'Anton'",b:"'Inter'",g:'family=Anton&family=Inter:wght@400;600;700'}},
   FXI:{none:'—',rain:'🌧️',storm:'⛈️',snow:'❄️',sparks:'🔥',stars:'🌠',bubbles:'🫧',fireflies:'✨',matrix:'💚',hearts:'💗',confetti:'🎊'},
   SKY:['kl','klgold','cyber','vapor'],
-  _fl:{},
+  SCENES:['mexico','tokyo','egypt','paris','rio','morocco','india','santorini'],
+  BANNERS:['dragon','koi','warp','samurai','aztec','pharaoh','longship','excel'],
+  _fl:{},_wl:0,
+  worlds(){if(Theme._wl)return;Theme._wl=1;const s=document.createElement('script');s.src='worlds.js';document.head.appendChild(s)},
   loadFont(k){const f=Theme.FONTS[k];if(!f||!f.g||Theme._fl[k])return;Theme._fl[k]=1;const l=document.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?'+f.g+'&display=swap';document.head.appendChild(l)},
   apply(p){
     p=p||{};const h=document.documentElement;
-    h.dataset.sky=Theme.SKY.includes(p.bg)?'1':'0';
+    h.dataset.sky=Theme.SKY.includes(p.bg)?'1':'0';if(Theme.SCENES.includes(p.bg)){h.dataset.scene=p.bg;Theme.worlds()}else delete h.dataset.scene;if(Theme.BANNERS.includes(p.pattern))Theme.worlds();
     const fk=Theme.FONTS[p.font]?p.font:'outfit',f=Theme.FONTS[fk];Theme.loadFont(fk);
     h.dataset.font=fk;h.style.setProperty('--disp',f.d+",system-ui,sans-serif");h.style.setProperty('--body',f.b+",system-ui,sans-serif");
     [...h.classList].filter(c=>c.startsWith('tx-')).forEach(c=>h.classList.remove(c));if(p.tx&&p.tx!=='plain')h.classList.add('tx-'+p.tx);

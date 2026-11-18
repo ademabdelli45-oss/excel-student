@@ -39,9 +39,13 @@ async function boot(){
   const s=await SB.auth.getSession();
   if(s.data.session){try{await loadWho()}catch(e){S.me=null;S.t=null}if(!S.me&&!S.t){try{await SB.auth.signOut()}catch(e){}}}
   if(S.link&&!S.me&&!S.t){try{S.link.pre=await rpc('claim_preview',{p_id:S.link.id,p_code:S.link.code})}catch(e){S.link.pre={error:'x'}}}
-  setTimeout(()=>{render();loadingDone()},Math.max(0,1700-(Date.now()-t0)));
+  setTimeout(()=>{if(S.me&&S.roster&&!S.roster.pin_changed&&!S.t)pinGate(()=>render());else render();loadingDone()},Math.max(0,1700-(Date.now()-t0)));
   if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
+function pinGate(cb){$('#chrome').innerHTML='';const first=((S.me&&S.me.name)||'').split(' ')[0];
+  $('#app').innerHTML=`<div class="view stag" style="padding-top:8vh;text-align:center"><img class="logoimg" src="logo_white.png" alt="Excel" style="width:min(220px,58vw);margin:0 auto 14px"><div class="card pop glow" style="text-align:left"><div class="mut sm">Almost there</div><h2 style="margin:2px 0 6px;font-size:24px">Hi ${E(first)} 👋 Create your own PIN</h2><p class="mut sm" style="margin:0 0 12px">Choose a PIN you will remember. You will use it with your ID <b>${E(S.me.student_id)}</b> every time you sign in.</p><span class="lbl">New PIN (6 digits or more)</span><input id="pg1" type="password" inputmode="numeric" class="inp" autocomplete="new-password" placeholder="••••••"><span class="lbl">Type it again</span><input id="pg2" type="password" inputmode="numeric" class="inp" autocomplete="new-password" placeholder="••••••"><button class="btn full" id="pgo" style="margin-top:16px">Save my PIN</button><p class="mut sm" id="pge" style="color:#fca5a5;margin:10px 0 0"></p></div></div>`;
+  $('#pgo').onclick=async()=>{const a=$('#pg1').value,b=$('#pg2').value,e=$('#pge');if(a.length<6){e.textContent='Use at least 6 characters.';return}if(a!==b){e.textContent='The two PINs do not match.';return}if(/^(.)\1+$/.test(a)||a==='123456'){e.textContent='That one is too easy to guess. Pick another.';return}
+    $('#pgo').disabled=true;const r=await SB.auth.updateUser({password:a});if(r.error){e.textContent=r.error.message;$('#pgo').disabled=false;return}try{await rpc('i_changed_pw')}catch(x){}if(S.roster)S.roster.pin_changed=true;buzz(20);cb()}}
 async function loadWho(){const w=await rpc('t_whoami');if(w){S.t=w;S.me=null;return}S.t=null;await loadMe()}
 async function loadMe(){
   const u=await SB.auth.getUser();const uid=u.data.user.id;
@@ -97,7 +101,7 @@ async function doAuth(){
     if(!S.me&&!S.t)throw new Error('This account is not ready yet. Ask your teacher.');
     history.replaceState(null,'',location.pathname);S.link=null;confetti(60);S.tab='home';
     if(S.t){T.tab='home';render();toast('Welcome, '+S.t.name.split(' ')[0]+'!')}
-    else if(fresh){onboard()}else{render();toast('Welcome back, '+(S.me.nickname||(S.me.name||'').split(' ')[0])+'!')}
+    else if(S.roster&&!S.roster.pin_changed){pinGate(()=>{fresh?onboard():render()})}else if(fresh){onboard()}else{render();toast('Welcome back, '+(S.me.nickname||(S.me.name||'').split(' ')[0])+'!')}
   }catch(e){b.disabled=false;b.textContent='Sign in';toast(e.message||'Something went wrong');b.classList.add('shake');setTimeout(()=>b.classList.remove('shake'),500)}
 }
 function onboard(){

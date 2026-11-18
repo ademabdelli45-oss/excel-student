@@ -89,3 +89,25 @@ html.tx-shadow .msg.me{box-shadow:3px 3px 0 var(--acc),6px 6px 0 rgba(0,0,0,.35)
 @media(prefers-reduced-motion:reduce){#fxc{display:none}}
 body{background:transparent!important}
 @media(pointer:coarse) and (max-width:700px){#app{max-width:none}}
+/* tab rows: never squash labels, scroll sideways */
+#ct,#tt{flex-wrap:nowrap!important;overflow-x:auto!important;scrollbar-width:none;-webkit-overflow-scrolling:touch;gap:8px}
+#ct::-webkit-scrollbar,#tt::-webkit-scrollbar{display:none}
+#ct button,#tt button{flex:0 0 auto!important;width:auto!important;min-width:max-content;padding:10px 16px!important;white-space:nowrap;font-size:13px}
+
+/* ===== World scenes (animated SVG) ===== */
+.bgfx .scene{display:none;position:absolute;inset:0;z-index:1;pointer-events:none;background-size:cover;background-position:center bottom;background-repeat:no-repeat}
+.bgfx .scene::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,rgba(4,8,18,.45),rgba(4,8,18,0) 28%,rgba(4,8,18,0) 62%,rgba(4,8,18,.5))}
+html[data-scene] .bgfx .scene{display:block}
+html[data-scene] .bgfx>i,html[data-scene] .bgfx .sky{display:none!important}
+.pv.sc{height:112px;border-radius:16px;border:1px solid rgba(255,255,255,.18);box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.pv.bn{height:64px;border-radius:16px;border:1px solid rgba(255,255,255,.18)}
+.cover{height:170px!important}
+.cover.pt-dragon::after{display:none!important}
+.cover.pt-koi::after{display:none!important}
+.cover.pt-warp::after{display:none!important}
+.cover.pt-samurai::after{display:none!important}
+.cover.pt-aztec::after{display:none!important}
+.cover.pt-pharaoh::after{display:none!important}
+.cover.pt-longship::after{display:none!important}
+.cover.pt-excel::after{display:none!important}
+.pv{position:relative}
