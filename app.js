@@ -92,7 +92,9 @@ async function doAuth(){
       const nf=x=>/find that student/i.test((x.error&&x.error.message)||(x.data&&x.data.error)||'');if(nf(cl))cl=await SB.rpc('claim_teacher',{p_id:id,p_code:pw});
       if(cl.error)throw cl.error;if(cl.data&&cl.data.error)throw new Error(cl.data.error);fresh=true;
     }
-    LS.set('lastid2',id);await loadWho();if(!S.me&&!S.t)throw new Error('This account is not ready yet. Ask your teacher.');
+    LS.set('lastid2',id);await loadWho();
+    if(!S.me&&!S.t){const nf=x=>/find that student/i.test((x.error&&x.error.message)||(x.data&&x.data.error)||'');let c2=await SB.rpc('claim_student',{p_id:id,p_code:pw});if(nf(c2))c2=await SB.rpc('claim_teacher',{p_id:id,p_code:pw});if(!c2.error&&!(c2.data&&c2.data.error)){fresh=true;await loadWho()}}
+    if(!S.me&&!S.t)throw new Error('This account is not ready yet. Ask your teacher.');
     history.replaceState(null,'',location.pathname);S.link=null;confetti(60);S.tab='home';
     if(S.t){T.tab='home';render();toast('Welcome, '+S.t.name.split(' ')[0]+'!')}
     else if(fresh){onboard()}else{render();toast('Welcome back, '+(S.me.nickname||(S.me.name||'').split(' ')[0])+'!')}
