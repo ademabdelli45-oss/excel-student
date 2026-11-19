@@ -13,12 +13,12 @@ const Theme={
   SCENES:['mexico','tokyo','egypt','paris','rio','morocco','india','santorini'],
   BANNERS:['dragon','koi','warp','samurai','aztec','pharaoh','longship','excel'],
   _fl:{},_wl:0,
-  worlds(){if(Theme._wl)return;Theme._wl=1;const s=document.createElement('script');s.src='worlds.js?v=20261119g';document.head.appendChild(s)},
+  worlds(){if(Theme._wl)return;Theme._wl=1;const s=document.createElement('script');s.src='worlds.js?v=20261119h';document.head.appendChild(s)},
   video(n){const sc=document.querySelector('.bgfx .scene');if(!sc)return;let v=sc.querySelector('video');
     if(!n){if(v){v.pause();v.removeAttribute('src');v.load();v.remove()}return}
     if(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches)return;
     if(!v){v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute('playsinline','');v.setAttribute('muted','');v.preload=(navigator.connection&&navigator.connection.saveData)?'none':'auto';sc.appendChild(v);v.addEventListener('playing',()=>v.classList.add('on'))}
-    if(v.dataset.n===n){if(v.paused)v.play().catch(()=>{});return}v.dataset.n=n;v.classList.remove('on');v.src='scene_'+n+'.mp4?v=20261119g';const pl=v.play();if(pl&&pl.catch)pl.catch(()=>{})},
+    if(v.dataset.n===n){if(v.paused)v.play().catch(()=>{});return}v.dataset.n=n;v.classList.remove('on');v.src='scene_'+n+'.mp4?v=20261119h';const pl=v.play();if(pl&&pl.catch)pl.catch(()=>{})},
   _par(){if(Theme._pp)return;Theme._pp=1;const h=document.documentElement;let raf=0;const mv=(x,y)=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;h.style.setProperty('--px',(x/innerWidth*2-1).toFixed(3));h.style.setProperty('--py',(y/innerHeight*2-1).toFixed(3))})};addEventListener('pointermove',e=>mv(e.clientX,e.clientY),{passive:true});addEventListener('pointerdown',e=>mv(e.clientX,e.clientY),{passive:true});addEventListener('deviceorientation',e=>{if(e.gamma==null)return;mv((e.gamma/45+1)/2*innerWidth,(((e.beta||45)-45)/45+1)/2*innerHeight)},{passive:true})},
   loadFont(k){const f=Theme.FONTS[k];if(!f||!f.g||Theme._fl[k])return;Theme._fl[k]=1;const l=document.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?'+f.g+'&display=swap';document.head.appendChild(l)},
   apply(p){
