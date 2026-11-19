@@ -11,7 +11,7 @@ const T={
   async refresh(){try{const w=await rpc('t_whoami');if(w)S.t=w}catch(e){}},
 
   render(){
-    T.stop();if(window.Theme)Theme.apply({bg:'aurora'});document.documentElement.dataset.bg='aurora';document.documentElement.style.setProperty('--acc','#8b5cf6');$('.bgfx .fx').innerHTML='';
+    T.stop();const _th=Object.assign({bg:'aurora'},LS.get('tth',{}));if(window.Theme)Theme.apply(_th);document.documentElement.dataset.bg=_th.bg||'aurora';document.documentElement.style.setProperty('--acc','#8b5cf6');$('.bgfx .fx').innerHTML='';
     const tabs=[['home','Home',ICON.home],['classes','Classes',ICON.class],['tools','Tools',ICON.chat],['me','Me',ICON.me]];
     const tb=t=>`<button data-t="${t[0]}" class="${T.tab===t[0]?'on':''}">${t[2]}<span>${t[1]}</span></button>`;
     $('#chrome').innerHTML=`<div class="nav">${tb(tabs[0])}${tb(tabs[1])}<button class="sc" id="fab" aria-label="Class QR"><i>${ICON.scan}</i><span>QR</span></button>${tb(tabs[2])}${tb(tabs[3])}</div>`;
@@ -162,8 +162,16 @@ const T={
   me(){
     const t=S.t;
     wrap(`<div class="card c" style="margin-bottom:12px"><div style="width:84px;height:84px;margin:0 auto 10px;border-radius:50%;background:var(--grad);display:grid;place-items:center;font-family:var(--disp);font-size:34px;color:#fff">${E(t.name.slice(0,1))}</div><h2>${E(t.name)}</h2><div class="mut">${t.role==='admin'?'Principal':'Teacher'} · ID ${E(t.id)}</div></div>
-    ${t.role==='admin'?`<button class="btn full" id="tp" style="margin-bottom:10px">Teachers & PINs</button>`:''}<button class="btn ghost full" id="pw">Change password</button><button class="btn ghost full" id="so" style="margin-top:10px">Sign out</button><p class="mut sm c" style="margin-top:16px">Excel Language Center · teacher mode. The Hub stays available for manual attendance.</p>`);
+    <button class="btn full" id="tth" style="margin-bottom:10px">🎨 Themes & design</button><p class="mut sm c" style="margin:-4px 0 12px">Teachers can switch to any theme, scene, font or effect, free.</p>${t.role==='admin'?`<button class="btn full" id="tp" style="margin-bottom:10px">Teachers & PINs</button>`:''}<button class="btn ghost full" id="pw">Change password</button><button class="btn ghost full" id="so" style="margin-top:10px">Sign out</button><p class="mut sm c" style="margin-top:16px">Excel Language Center · teacher mode. The Hub stays available for manual attendance.</p>`);
     if($('#tp'))$('#tp').onclick=T.teachers;
+    $('#tth').onclick=()=>{if(window.Theme)Theme.worlds();const cur=Object.assign({bg:'aurora',font:'outfit',fx:'none',tx:'plain'},LS.get('tth',{})),nm=s=>s.charAt(0).toUpperCase()+s.slice(1),F=(window.Theme&&Theme.FONTS)||{},X=(window.Theme&&Theme.FXI)||{};
+      const grp=(key,title,list)=>`<h4 style="margin:10px 0 2px">${title}</h4><div class="tchips" data-g="${key}">${list.map(([v,l])=>`<button data-v="${E(v)}" class="${cur[key]===v?'on':''}">${E(l)}</button>`).join('')}</div>`;
+      const bgs=Object.keys(BGC).filter(x=>!SCN.includes(x)).map(x=>[x,nm(x)]),scn=SCN.map(x=>['',x]).map(([_,x])=>[x,'🌍 '+nm(x)]),fonts=Object.keys(F).map(x=>[x,F[x].n||nm(x)]),fx=Object.keys(X).map(x=>[x,(X[x]||'')+' '+(x==='none'?'None':nm(x))]),tx=['plain','gold','neon','rainbow','fire','ice','gradient','outline','shadow','glitch'].map(x=>[x,nm(x)]);
+      const sh=sheet(`<h3 style="margin:0 0 4px">Themes & design</h3><p class="mut sm" style="margin:0 0 6px">Tap anything to try it. It's saved on this device.</p>${grp('bg','Backgrounds',bgs)}${grp('bg','World scenes',scn)}${grp('fx','Effects',fx)}${grp('font','Fonts',fonts)}${grp('tx','Text styles',tx)}<button class="btn ghost full" id="tthr">Reset to default</button>`);
+      sh.style.maxHeight='82vh';sh.style.overflowY='auto';
+      const paint=()=>{sh.querySelectorAll('.tchips').forEach(g=>g.querySelectorAll('button').forEach(b=>b.classList.toggle('on',cur[g.dataset.g]===b.dataset.v)))};
+      sh.querySelectorAll('.tchips').forEach(g=>g.querySelectorAll('button').forEach(b=>b.onclick=()=>{cur[g.dataset.g]=b.dataset.v;LS.set('tth',cur);if(window.Theme)Theme.apply(cur);document.documentElement.dataset.bg=cur.bg;paint()}));
+      sh.querySelector('#tthr').onclick=()=>{LS.set('tth',{});Object.assign(cur,{bg:'aurora',font:'outfit',fx:'none',tx:'plain'});if(window.Theme)Theme.apply(cur);document.documentElement.dataset.bg='aurora';paint()}};
     $('#pw').onclick=()=>{const sh=sheet(`<h3 style="margin:0 0 10px">Change password</h3><input id="np" type="password" class="inp" placeholder="New password (6+ characters)" autocomplete="new-password"><button class="btn full" id="npg" style="margin-top:12px">Save password</button>`);sh.querySelector('#npg').onclick=async()=>{const v=sh.querySelector('#np').value;if(v.length<6){toast('At least 6 characters');return}const r=await SB.auth.updateUser({password:v});if(r.error){toast(r.error.message);return}try{await SB.rpc('i_changed_pw')}catch(e){}toast('Password changed');sh.close()}};
     $('#so').onclick=async()=>{T.stop();await SB.auth.signOut();S.t=null;S.me=null;$('#chrome').innerHTML='';render()};
   },
