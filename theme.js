@@ -67,3 +67,5 @@ const FXE={cv:null,cx:null,mode:null,P:[],raf:0,W:0,H:0,last:0,flash:0,
   }
 };
 window.addEventListener('resize',()=>{if(FXE.cv&&FXE.raf){FXE.size();FXE.init()}});
+
+window.Theme=Theme;window.FXE=FXE;

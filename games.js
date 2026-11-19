@@ -105,3 +105,5 @@ function pron(){
   $('#x').onclick=()=>{S.tab='play';render()};const go=r=>{const v=$('#pw').value.trim();if(v)say(v,r)};$('#p1').onclick=()=>go(.9);$('#p2').onclick=()=>go(.5);$('#pw').onkeydown=e=>{if(e.key==='Enter')go(.9)};
   $('#pc').innerHTML=['schedule','water','vegetable','comfortable','Wednesday','privacy','laboratory','chocolate','literature','particularly'].map(w=>`<button class="btn sm ghost">${w}</button>`).join('');$$('#pc button').forEach(b=>b.onclick=()=>{$('#pw').value=b.textContent;say(b.textContent)})}
 return{show,say,wotd}})();
+
+window.Games=Games;
