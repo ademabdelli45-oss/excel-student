@@ -18,7 +18,9 @@ const T={
     $$('.nav button[data-t]').forEach(b=>b.onclick=()=>{buzz(8);T.tab=b.dataset.t;T.render()});
     $('#fab').onclick=()=>{buzz(12);T.qr()};
     ({home:T.home,classes:T.classes,tools:T.tools,me:T.me})[T.tab]();
+    T.badge();
   },
+  async badge(n){try{if(n==null){const r=await rpc('staff_inbox',{p_pin:''});n=(r||[]).filter(x=>x.status==='new').length}T.nb=n}catch(e){n=T.nb||0}const b=document.querySelector('.nav button[data-t="tools"]');if(!b)return;let d=b.querySelector('.bdg');if(!n){if(d)d.remove();return}if(!d){d=document.createElement('i');d.className='bdg';b.appendChild(d)}d.textContent=n>9?'9+':n;const ib=document.querySelector('#tt [data-s="ib"]');if(ib){let e=ib.querySelector('.bdg2');if(!e){e=document.createElement('i');e.className='bdg2';ib.appendChild(e)}e.textContent=n>9?'9+':n}},
 
   /* ---------- home ---------- */
   home(){
@@ -135,6 +137,7 @@ const T={
     const tabs=[['ab','Absences'],['hw','Homework'],['ib','Inbox'],['ev','Events'],['fd','Find student']];const sub=T.tsub||'ab';
     wrap(`<h2 style="margin:6px 2px 10px">Tools</h2><div class="row" id="tt" style="overflow:auto;padding-bottom:6px">${tabs.map(t=>`<button class="btn sm ${t[0]===sub?'':'ghost'}" data-s="${t[0]}" style="white-space:nowrap">${t[1]}</button>`).join('')}</div><div id="bd" style="margin-top:10px">${skel(3)}</div>`);
     $$('#tt button').forEach(b=>b.onclick=()=>{T.tsub=b.dataset.s;T.tools()});
+    T.badge(T.nb);
     T.tk=(T.tk||0)+1;$('#bd').dataset.k=T.tk;
     ({ab:T.absTab,hw:T.hwTab,ib:T.inboxTab,ev:T.evTab,fd:T.findTab})[sub]();
   },
@@ -146,7 +149,7 @@ const T={
     const ls=async()=>{let r=await rpc('staff_hw_list',{p_pin:''}).catch(()=>[]);if(S.t.role!=='admin'){const ids=(S.t.classes||[]).map(c=>c.id);r=(r||[]).filter(h=>ids.includes(h.class||h.class_id))}$('#hl').innerHTML=(r||[]).map(h=>`<div class="card row" style="margin:6px 0"><div class="grow"><b>${E(h.title)}</b><div class="mut sm">${E(h.class||h.class_id)} · due ${E(h.due||'-')}${h.done!=null?' · '+h.done+' done':''}</div></div><button class="btn sm red" data-d="${h.id}">Delete</button></div>`).join('');$$('[data-d]').forEach(b=>b.onclick=async()=>{await rpc('staff_hw_del',{p_pin:'',p_id:+b.dataset.d});ls()})};
     $('#ha').onclick=async()=>{if(!$('#ht').value.trim()){toast('Add a title');return}try{await rpc('staff_hw_add',{p_pin:'',p_class:$('#hc').value,p_title:$('#ht').value,p_body:$('#hb').value,p_due:$('#hd').value||null,p_file:null});toast('Posted ✅');$('#ht').value='';$('#hb').value='';ls()}catch(e){toast(e.message)}};ls()},
   async inboxTab(){const k=T.tk;const r=await rpc('staff_inbox',{p_pin:''}).catch(e=>{$('#bd').innerHTML='<div class="card">'+E(e.message)+'</div>';return null});if(!r||$('#bd').dataset.k!=String(k))return;
-    $('#bd').innerHTML=(r||[]).map(x=>`<div class="card" style="margin:8px 0"><div class="row"><b class="grow">${E(x.student)} · ${E(x.kind)}</b><span class="chip ${x.status==='new'?'a':'g'}">${E(x.status)}</span></div><p style="margin:6px 0">${E(x.body)}</p>${x.status==='new'?`<button class="btn sm" data-hs="${E(x.src)}" data-i="${x.id}">Mark handled</button>`:''}</div>`).join('')||'<div class="card c">Inbox empty. 🎉</div>';
+    T.badge((r||[]).filter(x=>x.status==='new').length);$('#bd').innerHTML=(r||[]).map(x=>`<div class="card" style="margin:8px 0"><div class="row"><b class="grow">${E(x.student)} · ${E(x.kind)}</b><span class="chip ${x.status==='new'?'a':'g'}">${E(x.status)}</span></div><p style="margin:6px 0">${E(x.body)}</p>${x.status==='new'?`<button class="btn sm" data-hs="${E(x.src)}" data-i="${x.id}">Mark handled</button>`:''}</div>`).join('')||'<div class="card c">Inbox empty. 🎉</div>';
     $$('[data-hs]').forEach(b=>b.onclick=async()=>{await rpc('staff_inbox_set',{p_pin:'',p_src:b.dataset.hs,p_id:+b.dataset.i,p_status:'done'});T.inboxTab()})},
   evTab(){const cs=S.t.classes||[];
     $('#bd').innerHTML=`<div class="card"><select id="ec" class="inp"><option value="all">All classes</option>${cs.map(c=>`<option value="${E(c.id)}">${E(c.name)}</option>`).join('')}</select><input id="et" class="inp" placeholder="Event title" style="margin-top:8px"><input id="ed" type="date" class="inp" style="margin-top:8px"><select id="ek" class="inp" style="margin-top:8px"><option>event</option><option>exam</option><option>holiday</option></select><button id="ea" class="btn full" style="margin-top:10px">Add to calendar</button></div>`;

@@ -122,3 +122,7 @@ html[data-scene] .bgfx>i,html[data-scene] .bgfx .sky{display:none!important}
 .tchips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px}
 .tchips button{padding:8px 13px;border-radius:12px;background:var(--card2);border:1px solid var(--line);font-size:13px;font-weight:600;white-space:nowrap}
 .tchips button.on{background:linear-gradient(135deg,var(--teal),var(--acc));color:#fff;border-color:transparent}
+.nav button{position:relative}
+.nav .bdg{position:absolute;top:4px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#ef4444;color:#fff;font:700 11px/18px system-ui,sans-serif;text-align:center;font-style:normal;box-shadow:0 0 0 2px rgba(10,14,30,.9),0 0 10px rgba(239,68,68,.7);animation:bdgp 1.8s ease-in-out infinite}
+.bdg2{display:inline-block;margin-left:6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#ef4444;color:#fff;font:700 11px/18px system-ui,sans-serif;text-align:center;font-style:normal}
+@keyframes bdgp{50%{transform:scale(1.15)}}
