@@ -1,3 +1,4 @@
+window.loadQR=()=>{if(window._qrl||typeof jsQR==='function')return;window._qrl=1;const e=document.createElement('script');e.src='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';document.head.appendChild(e)};
 const SB=supabase.createClient('https://skmdfluinkkdgyzgvuph.supabase.co','sb_publishable_v4wMwbVmjPfxnf8U6VyGgA_fnOs0WMG');
 const $=(s,r)=>(r||document).querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const E=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -13,8 +14,9 @@ const DN=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],MONTHS=['January','February
 function toast(m,ms){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove('show'),ms||2600)}
 function confetti(n){const cs=['#4cb7a5','#8b5cf6','#fbbf24','#f472b6','#34d399','#38bdf8'];for(let i=0;i<(n||40);i++){const d=document.createElement('i');d.className='confetti';d.style.left=Math.random()*100+'vw';d.style.background=cs[i%6];d.style.animationDelay=Math.random()*.5+'s';d.style.borderRadius=Math.random()>.5?'50%':'2px';document.body.appendChild(d);setTimeout(()=>d.remove(),2700)}}
 function buzz(p){try{navigator.vibrate&&navigator.vibrate(p||15)}catch(e){}}
-function snd(f,d){if(!S.sound)return;try{const A=snd.a||(snd.a=new(window.AudioContext||window.webkitAudioContext)());const o=A.createOscillator(),g=A.createGain();o.frequency.value=f;o.type='triangle';g.gain.value=.08;o.connect(g);g.connect(A.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,A.currentTime+(d||.18));o.stop(A.currentTime+(d||.18))}catch(e){}}
-async function rpc(fn,args){const r=await SB.rpc(fn,args||{});if(r.error)throw new Error(r.error.message);return r.data}
+function snd(f,d){if(!S.sound)return;try{const A=snd.a||(snd.a=new(window.AudioContext||window.webkitAudioContext)());if(A.state==='suspended')A.resume();const o=A.createOscillator(),g=A.createGain();o.frequency.value=f;o.type='triangle';g.gain.value=.08;o.connect(g);g.connect(A.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,A.currentTime+(d||.18));o.stop(A.currentTime+(d||.18))}catch(e){}}
+async function rpc(fn,args){const r=await Promise.race([SB.rpc(fn,args||{}),new Promise((_,j)=>setTimeout(()=>j(new Error('Network is slow. Please try again.')),15000))]);if(r.error)throw new Error(r.error.message);return r.data}
+window.addEventListener('unhandledrejection',e=>{try{const m=(e.reason&&e.reason.message)||'';if(m&&!/ResizeObserver|AbortError|play\(\)/i.test(m))toast(m.length>90?'Something went wrong. Try again.':m)}catch(x){}});
 function ava(p,sz){p=p||{};sz=sz||44;const fr=p.frame&&p.frame!=='none'?' fr-'+p.frame:'';return `<div class="avw${fr}" style="--s:${sz}px"><div class="avi" style="${p.photo?`background-image:url(${E(p.photo)})`:''}">${p.photo?'':E(p.avatar||'🦊')}</div></div>`}
 function lvl(xp){let l=1,n=100,x=xp||0;while(x>=n){x-=n;l++;n=Math.round(n*1.25)}return{l,cur:x,need:n}}
 const TIERS=[[1,'Newcomer'],[3,'Explorer'],[5,'Word Hunter'],[8,'Chatterbox'],[12,'Grammar Ninja'],[16,'Fluent Star'],[22,'Excel Legend']];
@@ -28,19 +30,20 @@ function applyTheme(){const p=S.me;if(!p)return;if(window.Theme)Theme.apply(p);c
 function loadingDone(){const l=$('#loader');if(l)l.classList.add('gone')}
 const wrap=h=>{$('#app').innerHTML='<div class="view">'+h+'</div>';window.scrollTo(0,0)};
 const greet=()=>{const h=new Date().getHours();return h<12?'Good morning':h<18?'Good afternoon':'Good evening'};
-const today=()=>new Date().toISOString().slice(0,10);
-const localDay=d=>{d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const _myt=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kuala_Lumpur',year:'numeric',month:'2-digit',day:'2-digit'});
+const localDay=d=>_myt.format(d||new Date());
+const today=()=>localDay();
 
 async function boot(){
   setTimeout(()=>{try{loadingDone()}catch(e){}},7000);
   const t0=Date.now();
   const m=(location.search.match(/[?&]c=([^&]+)/)||[])[1];
-  if(m){const p=decodeURIComponent(m).split('.');S.link={id:(p[0]||'').toUpperCase(),code:p[1]||''}}
+  if(m){const p=decodeURIComponent(m).split('.');S.link={id:(p[0]||'').toUpperCase(),code:p[1]||''};try{history.replaceState(null,'',location.pathname)}catch(e){}}
   const s=await SB.auth.getSession();
   if(s.data.session){try{await loadWho()}catch(e){S.me=null;S.t=null}if(!S.me&&!S.t){try{await SB.auth.signOut()}catch(e){}}}
   if(S.link&&!S.me&&!S.t){try{S.link.pre=await rpc('claim_preview',{p_id:S.link.id,p_code:S.link.code})}catch(e){S.link.pre={error:'x'}}}
-  setTimeout(()=>{if(S.me&&S.roster&&!S.roster.pin_changed&&!S.t)pinGate(()=>render());else render();loadingDone()},Math.max(0,1700-(Date.now()-t0)));
-  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+  setTimeout(()=>{if(S.me&&S.roster&&!S.roster.pin_changed&&!S.t)pinGate(()=>render());else render();loadingDone()},Math.max(0,500-(Date.now()-t0)));
+  setTimeout(loadQR,2500);if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
 function pinGate(cb){$('#chrome').innerHTML='';const first=((S.me&&S.me.name)||'').split(' ')[0];
   $('#app').innerHTML=`<div class="view stag" style="padding-top:8vh;text-align:center"><img class="logoimg" src="logo_white.png" alt="Excel" style="width:min(220px,58vw);margin:0 auto 14px"><div class="card pop glow" style="text-align:left"><div class="mut sm">Almost there</div><h2 style="margin:2px 0 6px;font-size:24px">Hi ${E(first)} 👋 Create your own PIN</h2><p class="mut sm" style="margin:0 0 12px">Choose a PIN you will remember. You will use it with your ID <b>${E(S.me.student_id)}</b> every time you sign in.</p><span class="lbl">New PIN (6 digits or more)</span><input id="pg1" type="password" inputmode="numeric" class="inp" autocomplete="new-password" placeholder="••••••"><span class="lbl">Type it again</span><input id="pg2" type="password" inputmode="numeric" class="inp" autocomplete="new-password" placeholder="••••••"><button class="btn full" id="pgo" style="margin-top:16px">Save my PIN</button><p class="mut sm" id="pge" style="color:#fca5a5;margin:10px 0 0"></p></div></div>`;
@@ -70,7 +73,7 @@ function authView(){
   $('#a_scan').onclick=scanCard;$('#a_go').onclick=doAuth;$('#a_pw').onkeydown=e=>{if(e.key==='Enter')doAuth()};$('#a_id').onkeydown=e=>{if(e.key==='Enter')$('#a_pw').focus()};
 }
 
-async function scanCard(){
+async function scanCard(){loadQR();
   wrap(`<h2>Scan your card</h2><p class="mut">Point the camera at the QR code on your Excel Student activation card.</p><div class="scanbox"><video id="cam" playsinline muted></video><i class="cn a"></i><i class="cn b"></i><i class="cn c"></i><i class="cn d"></i></div><div class="row" style="margin-top:14px"><input id="mt" class="inp" placeholder="No camera? Paste the link"><button id="mb" class="btn sm">Go</button></div><button class="btn ghost full" style="margin-top:14px" id="bk">Cancel</button>`);
   const vid=$('#cam');let stream,live=true,busy=false;const stop=()=>{live=false;try{stream&&stream.getTracks().forEach(t=>t.stop())}catch(e){}};
   async function got(txt){const m=String(txt||'').match(/[?&]c=([A-Za-z0-9._%-]+)/)||String(txt||'').match(/^([A-Za-z0-9-]+\.[0-9]{4,8})$/);if(!m||busy)return false;busy=true;const p=decodeURIComponent(m[1]).split('.');S.link={id:(p[0]||'').toUpperCase(),code:p[1]||''};
@@ -78,7 +81,7 @@ async function scanCard(){
     stop();if(S.link.pre&&!S.link.pre.error){buzz(25);authView()}else{S.link=null;toast('That card is not valid. Ask your teacher.');authView()}return true}
   $('#bk').onclick=()=>{stop();authView()};$('#mb').onclick=async()=>{if(!(await got($('#mt').value.trim())))toast('That does not look like an activation link')};
   try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});vid.srcObject=stream;await vid.play();const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
-    (function tick(){if(!live)return;if(vid.readyState>=2&&vid.videoWidth){const w=480,h=Math.round(480*vid.videoHeight/vid.videoWidth);cv.width=w;cv.height=h;cx.drawImage(vid,0,0,w,h);const q=jsQR(cx.getImageData(0,0,w,h).data,w,h);if(q&&q.data)got(q.data)}setTimeout(tick,160)})();
+    (function tick(){if(!live)return;if(vid.readyState>=2&&vid.videoWidth){const w=480,h=Math.round(480*vid.videoHeight/vid.videoWidth);cv.width=w;cv.height=h;cx.drawImage(vid,0,0,w,h);const q=typeof jsQR==='function'?jsQR(cx.getImageData(0,0,w,h).data,w,h):null;if(q&&q.data)got(q.data)}setTimeout(tick,160)})();
   }catch(e){toast('Camera blocked — paste your link instead')}
 }
 async function doAuth(){
@@ -124,11 +127,11 @@ function render(){
   const tabs=[['home','Home'],['class','Class'],['play','Play'],['chat','Chat'],['me','Me']];
   const tb=t=>`<button data-t="${t[0]}" class="${S.tab===t[0]?'on':''}">${ICON[t[0]]}<span>${t[1]}</span>${t[0]==='chat'&&S.unread?`<span class="badge">${S.unread}</span>`:''}</button>`;
   $('#chrome').innerHTML=`<div class="nav">${tabs.slice(0,2).map(tb).join('')}<button class="sc" id="fab" aria-label="Scan to check in"><i>${ICON.scan}</i><span>Scan</span></button>${tabs.slice(2).map(tb).join('')}</div>`;
-  $$('.nav button[data-t]').forEach(b=>b.onclick=()=>{buzz(8);if(S.stop)S.stop();S.stop=null;S.tab=b.dataset.t;render()});
+  $$('.nav button[data-t]').forEach(b=>b.onclick=()=>{buzz(8);const pb=document.getElementById('pvbar');if(pb){pb.remove();applyTheme()}if(S.stop)S.stop();S.stop=null;S.tab=b.dataset.t;render()});
   $('#fab').onclick=()=>{buzz(12);scanView()};
   if(S.stop)S.stop();S.stop=null;
   ({home:homeView,class:classView,play:playView,chat:chatView,me:meView})[S.tab]();
-  SB.rpc('my_friends').then(r=>{const n=(r.data||[]).reduce((a,f)=>a+(f.unread||0),0);if(n!==S.unread){S.unread=n;const b=$('.nav button[data-t=chat]');if(b){$('.badge',b)&&$('.badge',b).remove();if(n)b.insertAdjacentHTML('beforeend',`<span class="badge">${n}</span>`)}}}).catch(()=>{});
+  if(Date.now()-(S._ut||0)>30000){S._ut=Date.now();SB.rpc('my_friends').then(r=>{const n=(r.data||[]).reduce((a,f)=>a+(f.unread||0),0);if(n!==S.unread){S.unread=n;const b=$('.nav button[data-t=chat]');if(b){$('.badge',b)&&$('.badge',b).remove();if(n)b.insertAdjacentHTML('beforeend',`<span class="badge">${n}</span>`)}}}).catch(()=>{})}else if(S.unread){const b=$('.nav button[data-t=chat]');if(b&&!$('.badge',b))b.insertAdjacentHTML('beforeend',`<span class="badge">${S.unread}</span>`)}
 }
 function nextClass(){const c=S.cls;if(!c||!c.days||!c.days.length)return null;const now=new Date();for(let i=0;i<8;i++){const d=new Date(now.getTime()+i*864e5);if(c.days.map(x=>x%7).includes(d.getDay())){const t=(c.start_time||'09:00').split(':');const st=new Date(d);st.setHours(+t[0],+t[1],0,0);if(st>now||i>0)return{d,st}}}return null}
 function inText(st){const m=Math.round((st-new Date())/6e4);if(m<60)return'in '+m+' min';if(m<1440)return'in '+Math.floor(m/60)+'h '+(m%60)+'m';const d=Math.round(m/1440);return d===1?'tomorrow':'in '+d+' days'}
@@ -149,7 +152,7 @@ async function homeView(){
   animate();
   $('#h_av').onclick=()=>{S.tab='me';render()};$('#h_scan').onclick=scanView;$('#h_abs').onclick=absView;$('#h_hw').onclick=()=>{S.tab='class';S.sub='hw';render()};$('#h_pl').onclick=()=>{S.tab='play';render()};$('#h_lb').onclick=lbView;$('#h_all').onclick=e=>{e.preventDefault();lbView()};$('#h_sh').onclick=()=>{S.tab='me';S.shop=1;render()};
   $('#h_say').onclick=()=>Games.say(wd[0]);
-  const gb=$('#h_claim');if(gb)gb.onclick=async()=>{gb.disabled=true;try{const r=await rpc('daily_bonus');if(r&&r.error)throw new Error(r.error);await refreshMe();confetti(60);snd(780,.3);buzz([20,40,20]);toast('🎁 Gift claimed! +'+((r&&(r.coins||r.coin))||10)+' coins, +'+((r&&r.xp)||5)+' XP');homeView()}catch(e){toast(/already|once|today/i.test(e.message)?'Come back tomorrow for the next gift 🎁':e.message);const g=$('#h_gift');g&&g.remove()}};
+  const gb=$('#h_claim');if(gb)gb.onclick=async()=>{gb.disabled=true;try{const r=await rpc('daily_bonus');if(r&&r.error)throw new Error(r.error);await refreshMe();confetti(60);snd(780,.3);buzz([20,40,20]);toast('🎁 Gift claimed! +'+((r&&(r.coins||r.coin))||10)+' coins, +'+((r&&r.xp)||5)+' XP');homeView()}catch(e){if(/already|once|today/i.test(e.message)){toast('Come back tomorrow for the next gift 🎁');const g=$('#h_gift');g&&g.remove()}else{gb.disabled=false;toast(navigator.onLine?e.message:"You're offline. Try again when you have signal.")}}};
   try{const hw=await SB.from('homework').select('id').order('due'),dn=await SB.from('homework_done').select('hw_id');const left=(hw.data||[]).filter(h=>!(dn.data||[]).some(d=>d.hw_id===h.id)).length;const el=$('#h_hwn');if(el)el.textContent=left?left+' to do':'All done 🎉'}catch(e){}
   try{const at=await SB.from('attendance').select('scanned_at,status').order('scanned_at',{ascending:false}).limit(60);const days={};(at.data||[]).forEach(a=>{if(a.status==='present'||a.status==='late')days[localDay(new Date(a.scanned_at))]=1});const now=new Date(),dow=(now.getDay()+6)%7;let c=0;$$('#h_dots i').forEach((el,i)=>{const d=new Date(now.getTime()+(i-dow)*864e5);if(days[localDay(d)]){el.classList.add('on');el.innerHTML=ICON.check;c++}else if(i===dow)el.style.borderColor='var(--teal)'});const w=$('#h_wk');if(w)w.textContent=c+' check-in'+(c===1?'':'s')}catch(e){}
   try{const r=await rpc('leaderboard');const el=$('#h_top');if(el)el.innerHTML=r.slice(0,3).map((p,i)=>lbRow(p,i)).join('')||'<div class="card mut">No one yet — be the first!</div>'}catch(e){}
@@ -162,13 +165,13 @@ async function lbView(){
 }
 
 /* ---------------- scan ---------------- */
-async function scanView(){
+async function scanView(){loadQR();
   wrap(`<h2>Scan the class code</h2><p class="mut">Point your camera at the QR on the teacher’s screen.</p><div class="scanbox"><video id="cam" playsinline muted></video><i class="cn a"></i><i class="cn b"></i><i class="cn c"></i><i class="cn d"></i></div><div class="row" style="margin-top:14px"><input id="mt" class="inp" placeholder="Camera trouble? Paste code"><button id="mb" class="btn sm">Go</button></div><button class="btn ghost full" style="margin-top:14px" id="bk">Cancel</button>`);
   const vid=$('#cam');let stream,live=true;S.stop=()=>{live=false;try{stream&&stream.getTracks().forEach(t=>t.stop())}catch(e){}};
   $('#bk').onclick=()=>{S.stop();render()};$('#mb').onclick=()=>done($('#mt').value.trim());
   let busy=false;async function done(tok){if(busy||!tok)return;busy=true;try{const r=await rpc('scan',{p_token:tok});S.stop();scanResult(r)}catch(e){toast(e.message);setTimeout(()=>busy=false,1800)}}
   try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});vid.srcObject=stream;await vid.play();const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
-    (function tick(){if(!live)return;if(vid.readyState>=2&&vid.videoWidth){const w=480,h=Math.round(480*vid.videoHeight/vid.videoWidth);cv.width=w;cv.height=h;cx.drawImage(vid,0,0,w,h);const q=jsQR(cx.getImageData(0,0,w,h).data,w,h);if(q&&q.data&&!busy){buzz(20);done(q.data)}}setTimeout(tick,160)})();
+    (function tick(){if(!live)return;if(vid.readyState>=2&&vid.videoWidth){const w=480,h=Math.round(480*vid.videoHeight/vid.videoWidth);cv.width=w;cv.height=h;cx.drawImage(vid,0,0,w,h);const q=typeof jsQR==='function'?jsQR(cx.getImageData(0,0,w,h).data,w,h):null;if(q&&q.data&&!busy){buzz(20);done(q.data)}}setTimeout(tick,160)})();
   }catch(e){toast('Camera blocked — paste the code instead')}
 }
 async function scanResult(r){
@@ -178,7 +181,7 @@ async function scanResult(r){
 }
 async function absView(){
   wrap(`<div class="row" style="margin:6px 0 10px"><button class="btn sm ghost" id="bk" aria-label="Back">${ICON.back}</button><h2 class="grow">Can’t make it?</h2></div><p class="mut">Tell your teacher in advance (at least 1 hour before class).</p><div class="card"><span class="lbl" style="margin-top:0">Date</span><input id="ad" type="date" class="inp"><span class="lbl">Reason</span><textarea id="ar" class="inp" rows="3" placeholder="e.g. Doctor’s appointment"></textarea><button class="btn full" id="as" style="margin-top:14px">Send request</button></div><div id="al" style="margin-top:14px"></div>`);
-  $('#bk').onclick=render;$('#ad').value=new Date(Date.now()+864e5).toISOString().slice(0,10);
+  $('#bk').onclick=render;$('#ad').value=localDay(new Date(Date.now()+864e5));
   async function list(){const r=await SB.from('absence_requests').select('*').order('created_at',{ascending:false}).limit(8);$('#al').innerHTML=(r.data||[]).map(a=>`<div class="card row" style="margin:6px 0;padding:12px"><div class="grow"><b>${E(a.on_date)}</b><div class="mut sm">${E(a.reason)}</div></div><span class="chip ${a.status==='approved'?'g':a.status==='declined'?'r':'a'}">${E(a.status)}</span></div>`).join('')}
   list();$('#as').onclick=async()=>{const d=$('#ad').value,rs=$('#ar').value.trim();if(!rs){toast('Add a reason');return}const r=await SB.from('absence_requests').insert({student_id:S.me.student_id,class_id:S.roster.class_id,on_date:d,reason:rs});if(r.error){toast(r.error.message);return}toast('Sent to your teacher');$('#ar').value='';list()};
 }
@@ -190,7 +193,7 @@ async function classView(){
   $$('#ct button').forEach(b=>b.onclick=()=>{S.sub=b.dataset.s;classView()});const el=$('#cb');
   if(sub==='hw'){const hw=await SB.from('homework').select('*').order('due'),dn=await SB.from('homework_done').select('hw_id'),ds=(dn.data||[]).map(d=>d.hw_id);
     el.innerHTML=(hw.data||[]).map(h=>{const d=ds.includes(h.id);return `<div class="card stag" style="margin:8px 0"><div class="row"><div class="grow"><b>${E(h.title)}</b><div class="mut sm">Due ${E(h.due||'—')}</div></div><span class="chip ${d?'g':'a'}">${d?'Done':'To do'}</span></div><p class="mut" style="margin:8px 0">${E(h.body)}</p>${h.file_url?`<a href="${E(h.file_url)}" target="_blank">📎 Open file</a> `:''}${d?'':`<button class="btn sm" data-d="${h.id}" style="margin-top:6px">Mark done</button>`}</div>`}).join('')||'<div class="card c"><div style="font-size:40px">🎉</div>No homework right now</div>';
-    $$('[data-d]',el).forEach(b=>b.onclick=async()=>{const r=await SB.from('homework_done').insert({hw_id:+b.dataset.d,student_id:S.me.student_id});if(r.error)return toast(r.error.message);confetti(35);snd(700);toast('Nice! Homework done ✅');S.sub='hw';classView()})}
+    $$('[data-d]',el).forEach(b=>b.onclick=async()=>{if(b.disabled)return;b.disabled=true;const r=await SB.from('homework_done').insert({hw_id:+b.dataset.d,student_id:S.me.student_id});if(r.error&&!/duplicate|unique/i.test(r.error.message)){b.disabled=false;return toast(r.error.message)}confetti(35);snd(700);toast('Nice! Homework done ✅');S.sub='hw';classView()})}
   if(sub==='tt'){const days=(c.days||[]).map(x=>x%7),cur=new Date(),y=cur.getFullYear(),mo=cur.getMonth(),first=new Date(y,mo,1).getDay(),n=new Date(y,mo+1,0).getDate();
     const ev=await SB.from('events').select('*').order('on_date'),evd=(ev.data||[]).map(e=>e.on_date);let g='<div class="cal">'+DN.map(d=>`<div class="h">${d[0]}</div>`).join('');for(let i=0;i<first;i++)g+='<div></div>';
     for(let d=1;d<=n;d++){const ds2=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(d).padStart(2,'0'),dw=new Date(y,mo,d).getDay();g+=`<div class="d ${d===cur.getDate()?'t ':''}${evd.includes(ds2)?'e':''}" style="${days.includes(dw)&&d!==cur.getDate()?'background:rgba(76,183,165,.24)':''}">${d}</div>`}g+='</div>';
@@ -225,14 +228,14 @@ async function convo(id,name){
   wrap(`<div class="row" style="margin-bottom:8px"><button class="btn sm ghost" id="bk" aria-label="Back">${ICON.back}</button><h3 class="grow">${E(name)}</h3></div><div id="ms" style="min-height:50vh;padding-bottom:130px"></div><div style="position:fixed;left:0;right:0;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 4px);padding:0 12px;z-index:30;max-width:520px;margin:0 auto"><div class="row" id="st" style="overflow:auto;padding:0 4px 8px">${['👍','😂','❤️','🔥','👏','🎉','😮','🙏'].map(e=>`<button class="btn sm ghost" data-e="${e}" style="font-size:20px;padding:4px 12px">${e}</button>`).join('')}</div><div class="card row" style="padding:8px"><button class="btn sm ghost" id="pic">🖼️</button><button class="btn sm ghost" id="gif">GIF</button><input id="mi" maxlength="1000" class="inp" placeholder="Message…"><button class="btn sm" id="sn" aria-label="Send">${ICON.send}</button></div></div><input id="pf" type="file" accept="image/*" hidden>`);
   $('#chrome').innerHTML='';const me=S.me.student_id,seen={};$('#bk').onclick=()=>{if(S.stop)S.stop();S.stop=null;render()};
   let lastDay='';const add=m=>{if(seen[m.id])return;seen[m.id]=1;const dt=new Date(m.created_at||Date.now()),dk=localDay(dt);if(dk!==lastDay){lastDay=dk;const s=document.createElement('div');s.className='dsep';s.textContent=dk===localDay()?'TODAY':dt.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}).toUpperCase();$('#ms').appendChild(s)}const d=document.createElement('div');d.className='msg '+(m.from_id===me?'me':'th')+(!m.media_url&&isEmo(m.body)?' big':'');d.innerHTML=(m.kind==='image'||m.kind==='gif'?`<img src="${E(m.media_url)}" alt="">`:'')+(m.body?E(m.body):'')+`<span class="tm">${dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}${m.from_id===me?` <span class="ck">${m.read_at?'✓✓':'✓'}</span>`:''}</span>`;$('#ms').appendChild(d);window.scrollTo(0,document.body.scrollHeight)};
-  const r=await SB.from('messages').select('*').or(`and(from_id.eq.${me},to_id.eq.${id}),and(from_id.eq.${id},to_id.eq.${me})`).order('created_at');(r.data||[]).forEach(add);
+  const r=await SB.from('messages').select('*').or(`and(from_id.eq.${me},to_id.eq.${id}),and(from_id.eq.${id},to_id.eq.${me})`).order('created_at',{ascending:false}).limit(200);(r.data||[]).reverse().forEach(add);
   SB.from('messages').update({read_at:new Date().toISOString()}).eq('to_id',me).eq('from_id',id).is('read_at',null).then(()=>{},()=>{});
   const ch=SB.channel('m'+me+id).on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},p=>{const m=p.new;if((m.from_id===id&&m.to_id===me)||(m.from_id===me&&m.to_id===id))add(m)}).subscribe();S.stop=()=>SB.removeChannel(ch);
-  async function send(o){const x=await SB.from('messages').insert(Object.assign({from_id:me,to_id:id},o)).select().single();if(x.error)return toast(x.error.message);add(x.data);snd(520,.1)}
-  $('#sn').onclick=()=>{const v=$('#mi').value.trim();if(!v)return;$('#mi').value='';send({body:v})};$('#mi').onkeydown=e=>{if(e.key==='Enter')$('#sn').click()};
+  let sending=false;async function send(o,back){if(sending)return;sending=true;try{const x=await SB.from('messages').insert(Object.assign({from_id:me,to_id:id},o)).select().single();if(x.error){if(back!=null)$('#mi').value=back;return toast(x.error.message)}add(x.data);snd(520,.1)}catch(e){if(back!=null)$('#mi').value=back;toast('Could not send. Check your connection.')}finally{sending=false}}
+  $('#sn').onclick=()=>{const v=$('#mi').value.trim();if(!v)return;$('#mi').value='';send({body:v},v)};$('#mi').onkeydown=e=>{if(e.key==='Enter')$('#sn').click()};
   $$('#st [data-e]').forEach(b=>b.onclick=()=>send({body:b.dataset.e}));
   $('#pic').onclick=()=>$('#pf').click();$('#pf').onchange=async function(){const f=this.files[0];if(!f)return;const url=await upImg(f,'chat');if(url)send({kind:'image',media_url:url})};
-  $('#gif').onclick=()=>{const q=$('#mi').value.trim();if(!/^https?:\/\/.+\.(gif|webp)/i.test(q)){toast('Paste a GIF link in the box, then tap GIF');return}$('#mi').value='';send({kind:'gif',media_url:q})};
+  $('#gif').onclick=()=>{const q=$('#mi').value.trim();if(!/^https:\/\/[^\s]+\.(gif|webp)(\?\S*)?$/i.test(q)){toast('Paste a GIF link in the box, then tap GIF');return}$('#mi').value='';send({kind:'gif',media_url:q})};
 }
 async function upImg(file,kind,max){
   try{const bm=await createImageBitmap(file),m=max||1000,s=Math.min(1,m/Math.max(bm.width,bm.height)),cv=document.createElement('canvas');cv.width=Math.round(bm.width*s);cv.height=Math.round(bm.height*s);cv.getContext('2d').drawImage(bm,0,0,cv.width,cv.height);

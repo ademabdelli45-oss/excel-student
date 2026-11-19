@@ -13,12 +13,12 @@ const Theme={
   SCENES:['mexico','tokyo','egypt','paris','rio','morocco','india','santorini'],
   BANNERS:['dragon','koi','warp','samurai','aztec','pharaoh','longship','excel'],
   _fl:{},_wl:0,
-  worlds(){if(Theme._wl)return;Theme._wl=1;const s=document.createElement('script');s.src='worlds.js?v=20261119e';document.head.appendChild(s)},
+  worlds(){if(Theme._wl)return;Theme._wl=1;const s=document.createElement('script');s.src='worlds.js?v=20261119g';document.head.appendChild(s)},
   video(n){const sc=document.querySelector('.bgfx .scene');if(!sc)return;let v=sc.querySelector('video');
     if(!n){if(v){v.pause();v.removeAttribute('src');v.load();v.remove()}return}
     if(window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches)return;
-    if(!v){v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute('playsinline','');v.setAttribute('muted','');v.preload='auto';sc.appendChild(v);v.addEventListener('playing',()=>v.classList.add('on'))}
-    if(v.dataset.n===n)return;v.dataset.n=n;v.classList.remove('on');v.src='scene_'+n+'.mp4?v=20261119e';const pl=v.play();if(pl&&pl.catch)pl.catch(()=>{})},
+    if(!v){v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.setAttribute('playsinline','');v.setAttribute('muted','');v.preload=(navigator.connection&&navigator.connection.saveData)?'none':'auto';sc.appendChild(v);v.addEventListener('playing',()=>v.classList.add('on'))}
+    if(v.dataset.n===n){if(v.paused)v.play().catch(()=>{});return}v.dataset.n=n;v.classList.remove('on');v.src='scene_'+n+'.mp4?v=20261119g';const pl=v.play();if(pl&&pl.catch)pl.catch(()=>{})},
   _par(){if(Theme._pp)return;Theme._pp=1;const h=document.documentElement;let raf=0;const mv=(x,y)=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;h.style.setProperty('--px',(x/innerWidth*2-1).toFixed(3));h.style.setProperty('--py',(y/innerHeight*2-1).toFixed(3))})};addEventListener('pointermove',e=>mv(e.clientX,e.clientY),{passive:true});addEventListener('pointerdown',e=>mv(e.clientX,e.clientY),{passive:true});addEventListener('deviceorientation',e=>{if(e.gamma==null)return;mv((e.gamma/45+1)/2*innerWidth,(((e.beta||45)-45)/45+1)/2*innerHeight)},{passive:true})},
   loadFont(k){const f=Theme.FONTS[k];if(!f||!f.g||Theme._fl[k])return;Theme._fl[k]=1;const l=document.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?'+f.g+'&display=swap';document.head.appendChild(l)},
   apply(p){
@@ -36,10 +36,10 @@ const FXE={cv:null,cx:null,mode:null,P:[],raf:0,W:0,H:0,last:0,flash:0,
     let cv=document.getElementById('fxc');if(!cv){cv=document.createElement('canvas');cv.id='fxc';const b=document.querySelector('.bgfx');if(!b)return;b.appendChild(cv)}
     FXE.cv=cv;FXE.cx=cv.getContext('2d');FXE.size();FXE.init();FXE.last=0;FXE.raf=requestAnimationFrame(FXE.loop)},
   stop(){if(FXE.raf)cancelAnimationFrame(FXE.raf);FXE.raf=0;FXE.P=[];if(FXE.cx)FXE.cx.clearRect(0,0,FXE.W,FXE.H)},
-  size(){const d=Math.min(window.devicePixelRatio||1,1.5);FXE.W=innerWidth;FXE.H=innerHeight;FXE.cv.width=FXE.W*d;FXE.H&&(FXE.cv.height=FXE.H*d);FXE.cx.setTransform(d,0,0,d,0,0)},
+  size(){const d=1;FXE.W=innerWidth;FXE.H=innerHeight;FXE.cv.width=FXE.W*d;FXE.H&&(FXE.cv.height=FXE.H*d);FXE.cx.setTransform(d,0,0,d,0,0)},
   r(a,b){return a+Math.random()*(b-a)},
   init(){const m=FXE.mode,W=FXE.W,H=FXE.H,r=FXE.r,P=[];
-    const n={rain:90,storm:130,snow:70,sparks:55,stars:40,bubbles:28,fireflies:34,matrix:0,hearts:20,confetti:60}[m]||40;
+    const k=innerWidth<700?.65:1,n=Math.round(({rain:90,storm:130,snow:70,sparks:55,stars:40,bubbles:28,fireflies:34,matrix:0,hearts:20,confetti:60}[m]||40)*k);
     if(m==='matrix'){const c=Math.ceil(W/16);for(let i=0;i<c;i++)P.push({x:i*16,y:r(-H,0),s:r(2,5)})}
     else for(let i=0;i<n;i++)P.push(FXE.mk(true));
     FXE.P=P},
@@ -54,7 +54,7 @@ const FXE={cv:null,cx:null,mode:null,P:[],raf:0,W:0,H:0,last:0,flash:0,
       case'hearts':return{x:r(0,W),y:init?r(0,H):H+30,v:r(.6,1.6),sz:r(14,28),ph:r(0,6.28),e:['💗','💖','💜','💙'][Math.floor(r(0,4))]};
       case'confetti':return{x:r(0,W),y:init?r(0,H):-10,v:r(1,3),w:r(5,9),h:r(3,6),rot:r(0,6.28),vr:r(-.1,.1),c:['#f472b6','#fbbf24','#38bdf8','#34d399','#a78bfa'][Math.floor(r(0,5))],ph:r(0,6.28)}
     }return{}},
-  loop(t){FXE.raf=requestAnimationFrame(FXE.loop);if(document.hidden)return;if(t-FXE.last<30)return;FXE.last=t;
+  loop(t){if(document.hidden){FXE.raf=0;return}FXE.raf=requestAnimationFrame(FXE.loop);if(t-FXE.last<40)return;FXE.last=t;
     const c=FXE.cx,W=FXE.W,H=FXE.H,m=FXE.mode,P=FXE.P,tt=t/1000;
     if(m==='matrix'){c.fillStyle='rgba(5,10,28,.13)';c.globalCompositeOperation='destination-out';c.fillStyle='rgba(0,0,0,.12)';c.fillRect(0,0,W,H);c.globalCompositeOperation='source-over';c.font='14px monospace';
       P.forEach(p=>{const ch=String.fromCharCode(0x30A0+Math.floor(Math.random()*60));c.fillStyle='#b9ffcf';c.fillText(ch,p.x,p.y);c.fillStyle='rgba(34,211,120,.8)';c.fillText(ch,p.x,p.y-16);p.y+=p.s*3;if(p.y>H+20&&Math.random()>.96)p.y=-20});return}
@@ -72,7 +72,7 @@ const FXE={cv:null,cx:null,mode:null,P:[],raf:0,W:0,H:0,last:0,flash:0,
     if(m==='confetti'){P.forEach(p=>{p.y+=p.v;p.x+=Math.sin(tt+p.ph)*.8;p.rot+=p.vr;if(p.y>H+10){p.y=-10;p.x=FXE.r(0,W)}c.save();c.translate(p.x,p.y);c.rotate(p.rot);c.fillStyle=p.c;c.fillRect(-p.w/2,-p.h/2,p.w,p.h);c.restore()})}
   }
 };
-window.addEventListener('resize',()=>{if(FXE.cv&&FXE.raf){FXE.size();FXE.init()}});
+let _rz=0;window.addEventListener('resize',()=>{clearTimeout(_rz);_rz=setTimeout(()=>{if(FXE.cv&&FXE.raf&&innerWidth!==FXE.W){FXE.size();FXE.init()}},200)});
 
 window.Theme=Theme;window.FXE=FXE;
-setTimeout(function(){try{Theme.worlds()}catch(e){}},2500);
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&FXE.mode&&!FXE.raf&&FXE.cv){FXE.last=0;FXE.raf=requestAnimationFrame(FXE.loop)}var v=document.querySelector('.bgfx .scene video');if(!v)return;if(document.hidden)v.pause();else if(v.paused)v.play().catch(function(){})});document.addEventListener('pointerdown',function(){var v=document.querySelector('.bgfx .scene video');if(v&&v.paused)v.play().catch(function(){})},{passive:true});

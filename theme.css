@@ -142,3 +142,47 @@ html[data-scene] .card,html[data-sky="1"] .card{--cardbg:rgba(7,22,34,.95)}
 .card,.stat,.msg,.sheet,.item{color:var(--tx)}
 :is(html.tx-outline h1,html.tx-outline .hero h2,.txp.tx-outline){color:#fff;-webkit-text-stroke:1px rgba(0,0,0,.55);paint-order:stroke fill;text-shadow:0 0 14px var(--acc),0 2px 4px rgba(0,0,0,.6)}
 html.tx-outline .msg.me{background:rgba(8,26,38,.9);border:2px solid #fff}
+
+/* ---- student screens: solid tiles, nav, inputs, chips ---- */
+:root{--card:rgba(11,32,46,.9);--card2:rgba(20,48,66,.95)}
+.nav{background:rgba(6,20,30,.95)!important}
+.inp{background:rgba(4,14,22,.85)!important}
+.item,.stat,.bdg,.opt,.seg button,.dots i,.cal .d{background:var(--card);color:var(--tx)}
+.seg button.on,.dots i.on,.cal .t{background:var(--grad)}
+.seg button.on.g{background:#16a34a}.seg button.on.a{background:#d97706}.seg button.on.r{background:#dc2626}.seg button.on.v{background:#7c3aed}
+.chip{text-shadow:none}
+.mut,.sm,.lbl{color:var(--tx2)}
+.chiprow button,.chiprow .chip{background:rgba(11,32,46,.92);color:#fff}
+.chiprow .on{background:var(--grad)!important}
+
+/* ---- audit pass: legibility, targets, perf ---- */
+.bgfx .scene::after{background:linear-gradient(rgba(4,8,18,.5),rgba(4,8,18,.3) 30%,rgba(4,8,18,.3) 62%,rgba(4,8,18,.55))}
+.bgfx .scene video{filter:none}
+html[data-scene] h1,html[data-scene] h2,html[data-scene] h3,html[data-scene] .lbl,html[data-scene] .mut{text-shadow:0 1px 3px #000,0 0 10px rgba(0,0,0,.65)}
+html[data-scene] .card h1,html[data-scene] .card h2,html[data-scene] .card h3,html[data-scene] .card .mut,html[data-scene] .item .mut{text-shadow:none}
+.card{backdrop-filter:none;-webkit-backdrop-filter:none}
+.card.glow,.nav{backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+:root{--teal:#0d7f73}
+.seg button.on.g{background:#15803d}.seg button.on.a{background:#b45309}
+.nav .bdg,.nav .badge,.bdg2{background:#dc2626}
+.nav .bdg{left:calc(50% + 8px);top:2px}
+@media (prefers-reduced-motion:reduce){.nav .bdg{animation:none}[class*=tx-] h1{animation:none}}
+:is(html.tx-gradient h1,html.tx-gradient .hero h2,.txp.tx-gradient,html.tx-fire h1,html.tx-fire .hero h2,.txp.tx-fire,html.tx-gold h1,html.tx-gold .hero h2,.txp.tx-gold,html.tx-ice h1,html.tx-ice .hero h2,.txp.tx-ice,html.tx-rainbow h1,html.tx-rainbow .hero h2,.txp.tx-rainbow){text-shadow:none}
+html[class*=tx-] h1{padding:2px 10px;border-radius:14px;background:rgba(6,20,30,.7);display:inline-block}
+:root{--neon:#22d3ee;--neon2:#ff4fd8}
+#app{padding-bottom:calc(132px + env(safe-area-inset-bottom,0px))}
+#pvbar{bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+.nav{bottom:calc(env(safe-area-inset-bottom,0px) + 6px)}
+.btn.sm,.seg button,.pick{min-height:44px}
+.nav button{font-size:11px;font-weight:800}
+.chiprow .on{background:var(--grad)!important;color:#fff}
+.chiprow button.ghost{background:rgba(20,48,66,.95)}
+.tchips button{min-height:44px;padding:10px 14px}
+.tchips button.on{background:linear-gradient(135deg,#0f766e,#6d28d9)}
+html[data-font=retro] :is(.stat b,.tile b,.pc b){font-size:min(1em,13px)!important;line-height:1.5}
+html[data-font=retro] #app *{overflow-wrap:anywhere}
+html[data-font=retro] .nav button{font-size:8.5px}
+html[data-font=script] :is(h1,h2,h3){line-height:1.6;padding-bottom:.1em}
+html[data-font=bold] :is(h1,h2,h3){letter-spacing:.03em}
+.sheetbg.lite{background:transparent;backdrop-filter:none}
+@media (min-width:1000px) and (pointer:fine){#app{max-width:720px}}

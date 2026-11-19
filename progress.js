@@ -10,7 +10,7 @@ const Prog={
   pctc(p){return p==null?'':p>=85?'var(--green)':p>=70?'var(--teal)':p>=60?'var(--amber)':'var(--red)'},
   trkStats(d){const out={};(d.trk||[]).forEach(r=>{const o=out[r.k]=out[r.k]||{n:0,done:0,stars:0,sn:0,list:[]};o.n++;if(r.done)o.done++;if(r.s>0){o.stars+=r.s;o.sn++}o.list.push(r)});return out},
   trkPct(d){const t=Prog.trkStats(d);let n=0,k=0;Object.values(t).forEach(o=>{n+=o.n;k+=o.done});return n?Math.round(k/n*100):null},
-  examAvg(d){const x=(d.exams||[]).filter(e=>e.pct!=null);return x.length?Math.round(x.reduce((a,e)=>a+Number(e.pct),0)/x.length):null},
+  examAvg(d){const x=(d.exams||[]).filter(e=>e.pct!=null&&Number.isFinite(Number(e.pct)));return x.length?Math.round(x.reduce((a,e)=>a+Number(e.pct),0)/x.length):null},
 
   attH(d){
     const a=d.att||{},tot=(a.P||0)+(a.L||0)+(a.A||0)+(a.E||0);
