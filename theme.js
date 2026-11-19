@@ -13,7 +13,7 @@ const Theme={
   SCENES:['mexico','tokyo','egypt','paris','rio','morocco','india','santorini'],
   BANNERS:['dragon','koi','warp','samurai','aztec','pharaoh','longship','excel'],
   _fl:{},_wl:0,
-  worlds(){if(Theme._wl)return;Theme._wl=1;const s=document.createElement('script');s.src='worlds.js';document.head.appendChild(s)},
+  worlds(){if(Theme._wl)return;Theme._wl=1;const s=document.createElement('script');s.src='worlds.js?v=20261119d';document.head.appendChild(s)},
   loadFont(k){const f=Theme.FONTS[k];if(!f||!f.g||Theme._fl[k])return;Theme._fl[k]=1;const l=document.createElement('link');l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?'+f.g+'&display=swap';document.head.appendChild(l)},
   apply(p){
     p=p||{};const h=document.documentElement;
@@ -69,3 +69,4 @@ const FXE={cv:null,cx:null,mode:null,P:[],raf:0,W:0,H:0,last:0,flash:0,
 window.addEventListener('resize',()=>{if(FXE.cv&&FXE.raf){FXE.size();FXE.init()}});
 
 window.Theme=Theme;window.FXE=FXE;
+setTimeout(function(){try{Theme.worlds()}catch(e){}},2500);
