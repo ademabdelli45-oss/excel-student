@@ -31,10 +31,11 @@ const T={
     wrap(`<div class="card glow" style="background:linear-gradient(135deg,rgba(76,183,165,.25),rgba(139,92,246,.25));margin-bottom:12px"><div class="mut sm">${greet()}</div><h1 style="font-size:26px;margin:2px 0">${E(t.name)}</h1><div class="row wrap" style="margin-top:6px"><span class="chip ${t.role==='admin'?'v':'g'}">${t.role==='admin'?'Principal':'Teacher'}</span><span class="chip">ID ${E(t.id)}</span></div></div>
     <div class="stats" style="margin-bottom:14px"><div class="stat"><b>${cs.length}</b><span>Classes</span></div><div class="stat"><b>${stu}</b><span>Students</span></div><div class="stat"><b>${DN[dow]}</b><span>Today</span></div></div>
     <div class="row" style="margin-bottom:14px"><button class="btn grow" id="h_att">Take attendance</button><button class="btn ghost grow" id="h_qr">Open class QR</button></div>
+    <div class="row" style="margin-bottom:14px"><button class="btn grow" id="h_sk" style="background:linear-gradient(135deg,#ffb300,#fb8c00);color:#222">🎒 Scan camp kids</button></div>
     <h3 style="margin:6px 2px 8px">${today.length?'Today’s classes':'Your classes'}</h3>`+
     (list.map(c=>`<div class="card row" data-c="${E(c.id)}" style="margin:8px 0;cursor:pointer"><div class="grow"><b>${E(c.name)}</b><div class="mut sm">${c.n||0} students${c.start?' · '+E(String(c.start).slice(0,5)):''}${t.role==='admin'&&c.teacher?' · '+E(c.teacher):''}</div></div><span class="chip">Open</span></div>`).join('')||'<div class="card c">No classes assigned to you yet.</div>'));
     $$('[data-c]').forEach(b=>b.onclick=()=>T.classPage(b.dataset.c,'reg'));
-    $('#h_att').onclick=()=>{T.tab='classes';T.render()};$('#h_qr').onclick=T.qr;
+    $('#h_att').onclick=()=>{T.tab='classes';T.render()};$('#h_qr').onclick=T.qr;$('#h_sk').onclick=T.scanKid;
   },
 
   /* ---------- classes ---------- */
@@ -113,6 +114,27 @@ const T={
   },
 
   /* ---------- class QR (live attendance) ---------- */
+
+  /* ---------- Winter Camp: teacher scans a kid's QR, attendance goes into the Teacher Hub ---------- */
+  async scanKid(){
+    loadQR();T.stop();let mode='P',busy=false,live=true,stream;const HUB='https://script.google.com/macros/s/AKfycbxlgwpxxBPhaGgZV3VqCb1tvREzp3LhQFg1IfJs9VO3vAgoekH_ew-vgdfKsqkvyashcw/exec',KEY='cscf72239ccaa086439a05bb02',log=[];
+    wrap(`<div class="row" style="margin:6px 0 10px"><button class="btn sm ghost" id="bk" aria-label="Back">${ICON.back}</button><h2 class="grow">Scan camp kids</h2></div>
+    <div class="row" style="margin-bottom:10px"><button class="btn grow" id="m_p">Present</button><button class="btn ghost grow" id="m_l">Late</button></div>
+    <div class="scanbox"><video id="cam" playsinline muted></video><i class="cn a"></i><i class="cn b"></i><i class="cn c"></i><i class="cn d"></i></div>
+    <div id="sr" class="card" style="margin-top:12px;text-align:center;min-height:64px"><span class="mut">Point the camera at a kid's QR card</span></div>
+    <div id="sl" style="margin-top:8px"></div>`);
+    S.stop=()=>{live=false;try{stream&&stream.getTracks().forEach(x=>x.stop())}catch(e){}};
+    const setMode=m=>{mode=m;$('#m_p').className='btn grow'+(m==='P'?'':' ghost');$('#m_l').className='btn grow'+(m==='L'?'':' ghost')};setMode('P');
+    $('#m_p').onclick=()=>setMode('P');$('#m_l').onclick=()=>setMode('L');$('#bk').onclick=()=>{S.stop();T.render()};
+    const show=r=>{$('#sr').innerHTML=r.ok?`<div style="font-size:44px">${r.again?'👍':r.status==='L'?'🕘':'✅'}</div><b style="font-size:20px">${E(r.name)}</b><div class="mut sm">${E(r.cls)} · ${r.again?'already marked '+(r.status==='L'?'late':'present'):(r.status==='L'?'Late':'Present')} · ${E(r.at||'')}</div>`:`<div style="font-size:36px">⚠️</div><b>${E(r.error||'Not found')}</b>${r.name?'<div class="mut sm">'+E(r.name)+'</div>':''}`;
+      if(r.ok&&!r.again){log.unshift(r);$('#sl').innerHTML=log.slice(0,8).map(x=>`<div class="card row" style="margin:6px 0;padding:10px"><b class="grow">${E(x.name)}</b><span class="chip ${x.status==='L'?'a':'g'}">${x.status==='L'?'Late':'Present'}</span></div>`).join('')}};
+    async function done(raw){if(busy||!raw)return;let tok='';try{tok=new URL(raw).searchParams.get('t')||''}catch(e){tok=String(raw).trim()}if(!tok)return;busy=true;
+      try{buzz(20);const u=HUB+'?api=campscan&key='+KEY+'&t='+encodeURIComponent(tok)+'&st='+mode+'&by='+encodeURIComponent((S.t&&S.t.name)||'Teacher');const r=await (await fetch(u)).json();show(r);snd(r.ok?(mode==='L'?330:660):200,.25);buzz(r.ok?[30,60,30]:[80])}catch(e){show({ok:false,error:'No connection to the Hub, try again'})}
+      setTimeout(()=>busy=false,1800)}
+    try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});const vid=$('#cam');vid.srcObject=stream;await vid.play();const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
+      (function tick(){if(!live)return;if(vid.readyState>=2&&vid.videoWidth){const w=480,h=Math.round(480*vid.videoHeight/vid.videoWidth);cv.width=w;cv.height=h;cx.drawImage(vid,0,0,w,h);const q=typeof jsQR==='function'?jsQR(cx.getImageData(0,0,w,h).data,w,h):null;if(q&&q.data&&!busy)done(q.data)}setTimeout(tick,160)})();
+    }catch(e){toast('Camera blocked. Allow the camera and try again.')}
+  },
   async qr(){
     T.stop();T.tab='qr';const cs=S.t.classes||[];$('#chrome').querySelectorAll('.nav button[data-t]').forEach(b=>b.classList.remove('on'));
     wrap(`<h2 style="margin:6px 2px 10px">Class QR attendance</h2><div class="card"><span class="lbl" style="margin-top:0">Class</span><select id="cl" class="inp">${cs.map(c=>`<option value="${E(c.id)}">${E(c.name)}</option>`).join('')}</select><span class="lbl">Late after (minutes)</span><input id="lt" type="number" class="inp" value="10" min="1" max="60"><button id="op" class="btn full" style="margin-top:14px">Open class & show QR</button><div class="mut sm" style="margin-top:10px">Students scan this code inside their Excel app. It changes every 30 seconds so it can’t be shared. Scans are saved straight into the register.</div></div>`);
