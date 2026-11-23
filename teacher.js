@@ -2,7 +2,7 @@
 const SLINK='https://ademabdelli45-oss.github.io/excel-student/';
 const T={
   tab:'home',timers:[],
-  stop(){T.timers.forEach(clearInterval);T.timers=[];if(S.stop===T.stop)S.stop=null},
+  stop(){T.timers.forEach(clearInterval);T.timers=[];if(T.kidStop){try{T.kidStop()}catch(e){}T.kidStop=null}if(S.stop===T.stop)S.stop=null},
   link(id,pin){return SLINK+'?c='+encodeURIComponent(id)+'.'+pin},
   msg(name,id,pin){return `Hi ${String(name||'').split(' ')[0]}! Your Excel account is ready.\nID: ${id}\nPIN: ${pin}\nOpen: ${T.link(id,pin)}`},
   wa(text){window.open('https://wa.me/?text='+encodeURIComponent(text),'_blank')},
@@ -123,15 +123,15 @@ const T={
     <div class="scanbox"><video id="cam" playsinline muted></video><i class="cn a"></i><i class="cn b"></i><i class="cn c"></i><i class="cn d"></i></div>
     <div id="sr" class="card" style="margin-top:12px;text-align:center;min-height:64px"><span class="mut">Point the camera at a kid's QR card</span></div>
     <div id="sl" style="margin-top:8px"></div>`);
-    S.stop=()=>{live=false;try{stream&&stream.getTracks().forEach(x=>x.stop())}catch(e){}};
+    S.stop=T.kidStop=()=>{live=false;try{stream&&stream.getTracks().forEach(x=>x.stop())}catch(e){}};
     const setMode=m=>{mode=m;$('#m_p').className='btn grow'+(m==='P'?'':' ghost');$('#m_l').className='btn grow'+(m==='L'?'':' ghost')};setMode('P');
     $('#m_p').onclick=()=>setMode('P');$('#m_l').onclick=()=>setMode('L');$('#bk').onclick=()=>{S.stop();T.render()};
     const show=r=>{$('#sr').innerHTML=r.ok?`<div style="font-size:44px">${r.again?'👍':r.status==='L'?'🕘':'✅'}</div><b style="font-size:20px">${E(r.name)}</b><div class="mut sm">${E(r.cls)} · ${r.again?'already marked '+(r.status==='L'?'late':'present'):(r.status==='L'?'Late':'Present')} · ${E(r.at||'')}</div>`:`<div style="font-size:36px">⚠️</div><b>${E(r.error||'Not found')}</b>${r.name?'<div class="mut sm">'+E(r.name)+'</div>':''}`;
       if(r.ok&&!r.again){log.unshift(r);$('#sl').innerHTML=log.slice(0,8).map(x=>`<div class="card row" style="margin:6px 0;padding:10px"><b class="grow">${E(x.name)}</b><span class="chip ${x.status==='L'?'a':'g'}">${x.status==='L'?'Late':'Present'}</span></div>`).join('')}};
-    async function done(raw){if(busy||!raw)return;let tok='';try{tok=new URL(raw).searchParams.get('t')||''}catch(e){tok=String(raw).trim()}if(!tok)return;busy=true;
+    async function done(raw){if(busy||!raw)return;let tok='';try{tok=new URL(raw).searchParams.get('t')||''}catch(e){tok=String(raw).trim()}if(!tok)return;if(tok===done.l&&Date.now()-done.t<6000)return;done.l=tok;done.t=Date.now();busy=true;
       try{buzz(20);const u=HUB+'?api=campscan&key='+KEY+'&t='+encodeURIComponent(tok)+'&st='+mode+'&by='+encodeURIComponent((S.t&&S.t.name)||'Teacher');const r=await (await fetch(u)).json();show(r);snd(r.ok?(mode==='L'?330:660):200,.25);buzz(r.ok?[30,60,30]:[80])}catch(e){show({ok:false,error:'No connection to the Hub, try again'})}
       setTimeout(()=>busy=false,1800)}
-    try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});const vid=$('#cam');vid.srcObject=stream;await vid.play();const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
+    try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});if(!live){stream.getTracks().forEach(x=>x.stop());return}const vid=$('#cam');vid.srcObject=stream;await vid.play();const cv=document.createElement('canvas'),cx=cv.getContext('2d',{willReadFrequently:true});
       (function tick(){if(!live)return;if(vid.readyState>=2&&vid.videoWidth){const w=480,h=Math.round(480*vid.videoHeight/vid.videoWidth);cv.width=w;cv.height=h;cx.drawImage(vid,0,0,w,h);const q=typeof jsQR==='function'?jsQR(cx.getImageData(0,0,w,h).data,w,h):null;if(q&&q.data&&!busy)done(q.data)}setTimeout(tick,160)})();
     }catch(e){toast('Camera blocked. Allow the camera and try again.')}
   },
